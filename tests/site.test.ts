@@ -158,4 +158,17 @@ describe('文章頁導覽', () => {
       .reduce((sum, lang) => sum + lang.page_count, 0)
     expect(indexed).toBe(published.length)
   })
+
+  it.each(published.map((article, i) => ({ ...article, i })))(
+    '$url 底部的上一篇 / 下一篇依篇章順序，第一篇沒有上一篇、最後一篇沒有下一篇',
+    ({ url, i }) => {
+      const page = loadPage(url)
+      const prev = page.querySelector('a[rel="prev"]')
+      const next = page.querySelector('a[rel="next"]')
+      expect(prev?.getAttribute('href')).toBe(published[i - 1]?.url)
+      expect(next?.getAttribute('href')).toBe(published[i + 1]?.url)
+      if (prev) expect(text(prev)).toContain(`上一篇 ${published[i - 1].title}`)
+      if (next) expect(text(next)).toContain(`下一篇 ${published[i + 1].title}`)
+    },
+  )
 })
