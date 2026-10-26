@@ -29,7 +29,24 @@ export default defineConfig({
         Footer: './src/components/overrides/Footer.astro',
       },
       // 一般程式碼區塊和 MagicSteps 用同一個主題
-      expressiveCode: { themes: [CODE_THEME] },
+      expressiveCode: {
+        themes: [CODE_THEME],
+        // 不替對比太低的 token 自動調色，顏色才會和 MagicSteps 一模一樣
+        minSyntaxHighlightingColorContrast: 0,
+        // 外框、圓角、字體和 MagicSteps 的程式碼區一致，值都來自 tokens.css
+        styleOverrides: {
+          borderRadius: '10px',
+          borderColor: 'var(--rule)',
+          codeBackground: 'var(--code-bg)',
+          codeFontFamily: 'var(--font-mono)',
+          codeFontSize: '0.84rem',
+          codeLineHeight: '1.65',
+          frames: {
+            frameBoxShadowCssValue: 'none',
+            editorActiveTabIndicatorTopColor: 'var(--accent)',
+          },
+        },
+      },
     }),
     react(),
   ],

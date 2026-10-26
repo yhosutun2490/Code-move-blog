@@ -36,6 +36,22 @@ describe('一般程式碼區塊', () => {
       .map((line) => ['mark', 'ins', 'del'].find((m) => line.classList.contains(m)) ?? '')
     expect(marks).toEqual(['', 'mark', 'ins', 'del'])
   })
+
+  it('和程式碼動畫用同一套配色：同樣的 token 是同樣的顏色', () => {
+    const stepper = magicStepperTokens()
+    // 第一個樣本區塊沒有任何標記，顏色不會因為底色不同而被調整
+    const spans = codeBlocks()[0].querySelectorAll('pre span[style]')
+    const compared = spans
+      .map((span) => ({
+        token: span.textContent.trim(),
+        color: span.getAttribute('style')!.match(/#[0-9a-f]+/i)![0].toLowerCase(),
+      }))
+      .filter(({ token }) => stepper.get(token)?.size === 1)
+    expect(compared.length).toBeGreaterThan(10)
+    for (const { token, color } of compared) {
+      expect(color, `「${token}」的顏色`).toBe([...stepper.get(token)!][0])
+    }
+  })
 })
 
 describe('有一般程式碼區塊的頁面，瀏覽器端', () => {
@@ -47,3 +63,29 @@ describe('有一般程式碼區塊的頁面，瀏覽器端', () => {
     expect(withShiki).toEqual([])
   })
 })
+
+// 正式網站裡 MagicSteps 的 token → 顏色（island props 是 Astro 的序列化格式：[型別, 值]）
+function magicStepperTokens() {
+  const decode = (value: unknown): unknown => {
+    const [type, raw] = value as [number, unknown]
+    if (type === 1) return (raw as unknown[]).map(decode)
+    if (raw && typeof raw === 'object') {
+      return Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, decode(v)]))
+    }
+    return raw
+  }
+  const colors = new Map<string, Set<string>>()
+  for (const island of loadPage('/mobx/01-getter-setter/').querySelectorAll('astro-island')) {
+    if (JSON.parse(island.getAttribute('opts')!).name !== 'MagicStepper') continue
+    const props = decode([0, JSON.parse(island.getAttribute('props')!)]) as {
+      steps: { tokens: { content: string; color?: string }[] }[]
+    }
+    for (const { content, color } of props.steps.flatMap((s) => s.tokens)) {
+      const token = content.trim()
+      if (!token || !color) continue
+      if (!colors.has(token)) colors.set(token, new Set())
+      colors.get(token)!.add(color.toLowerCase())
+    }
+  }
+  return colors
+}
