@@ -17,7 +17,7 @@ export default defineConfig({
       sidebar: [{ label: 'MobX 拆解', items: [{ autogenerate: { directory: 'mobx' } }] }],
       routeMiddleware: './src/routeData.ts',
       // 只載入 token 和互動元件的樣式；首頁的舊版型樣式不進 Starlight
-      customCss: ['./src/styles/tokens.css', './src/styles/islands.css'],
+      customCss: ['./src/styles/fonts.css', './src/styles/tokens.css', './src/styles/islands.css'],
       components: {
         PageTitle: './src/components/overrides/PageTitle.astro',
       },

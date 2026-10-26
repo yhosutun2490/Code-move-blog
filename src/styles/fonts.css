@@ -1,0 +1,14 @@
+/* 字體跟著網站一起打包（@fontsource），不連外部字型 CDN。
+   只載入實際用到的字重；中文字體依 unicode-range 切片，瀏覽器只下載頁面用到的字。 */
+
+/* 內文：一般 400、粗體 700（Starlight 介面的 600 會落到 700） */
+@import '@fontsource/noto-sans-tc/400.css';
+@import '@fontsource/noto-sans-tc/700.css';
+
+/* 標題：小標 600、文章大標 900 */
+@import '@fontsource/noto-serif-tc/600.css';
+@import '@fontsource/noto-serif-tc/900.css';
+
+/* 程式碼 */
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/600.css';
