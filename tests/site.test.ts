@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   articles,
@@ -112,6 +112,15 @@ describe('靜態輸出', () => {
   it('demos 裡的程式檔不會變成頁面', () => {
     const demoPages = distFiles().filter((f) => /[\\/]demos[\\/].*\.html$/.test(f))
     expect(demoPages).toEqual([])
+  })
+
+  it('網站只有首頁、404 和文章頁，沒有多出來的頁面', () => {
+    const pages = distFiles()
+      .filter((f) => f.endsWith('.html'))
+      .map((f) => '/' + relative(DIST, f).replaceAll('\\', '/'))
+      .sort()
+    const expected = ['/index.html', '/404.html', ...published.map((a) => `${a.url}index.html`)]
+    expect(pages).toEqual(expected.sort())
   })
 })
 
