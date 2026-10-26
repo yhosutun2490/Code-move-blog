@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { parse, type HTMLElement } from 'node-html-parser'

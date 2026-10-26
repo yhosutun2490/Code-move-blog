@@ -1,8 +1,12 @@
-import { readFileSync } from 'node:fs'
+/// <reference types="node" />
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   articles,
   clientScripts,
+  DIST,
+  distFiles,
   loadPage,
   pageExists,
   published,
@@ -94,5 +98,19 @@ describe('瀏覽器端', () => {
       /scopeName|tokenizeLine/.test(readFileSync(file, 'utf8')),
     )
     expect(withShiki).toEqual([])
+  })
+})
+
+describe('靜態輸出', () => {
+  it('build 產出的是純靜態檔，沒有伺服器程式', () => {
+    expect(pageExists('/')).toBe(true)
+    expect(existsSync(join(DIST, 'server'))).toBe(false)
+    const serverEntries = distFiles().filter((f) => /[\\/](entry\.mjs|_worker\.js)$/.test(f))
+    expect(serverEntries).toEqual([])
+  })
+
+  it('demos 裡的程式檔不會變成頁面', () => {
+    const demoPages = distFiles().filter((f) => /[\\/]demos[\\/].*\.html$/.test(f))
+    expect(demoPages).toEqual([])
   })
 })
