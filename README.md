@@ -21,6 +21,7 @@ npm run preview    # 預覽 build 結果
 src/
 ├── content.config.ts          # Starlight docs 集合：每篇 = 一個資料夾的 index.mdx
 ├── content/docs/mobx/
+│   ├── 00-draft-fixture/      # 測試用草稿（draft: true），正式 build 不會出現，請保留
 │   └── 01-getter-setter/
 │       ├── index.mdx          # 文章本體
 │       └── demos/

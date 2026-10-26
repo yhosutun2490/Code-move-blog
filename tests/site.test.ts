@@ -1,6 +1,7 @@
 /// <reference types="node" />
 import { existsSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { gunzipSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
 import {
   articles,
@@ -25,6 +26,11 @@ describe('文章網址', () => {
     expect(text(page.querySelector('h1'))).toBe(article.title)
     // 導言要出現在頁面上，不能只在 <meta>
     expect(text(page.querySelector('body'))).toContain(article.description)
+  })
+
+  it('有一篇草稿可以拿來驗證草稿會被隱藏', () => {
+    // 沒有草稿的話，下面所有和草稿有關的測試都會空轉
+    expect(articles.filter((a) => a.draft).map((a) => a.folder)).toContain('00-draft-fixture')
   })
 
   it('草稿沒有頁面', () => {
@@ -180,6 +186,28 @@ describe('文章頁導覽', () => {
       if (next) expect(text(next)).toContain(`下一篇 ${published[i + 1].title}`)
     },
   )
+})
+
+describe('草稿', () => {
+  const drafts = articles.filter((a) => a.draft)
+
+  // dist 裡每個檔案的內容；Pagefind 的索引是 gzip，先解開
+  const distContents = () =>
+    distFiles().map((file) => {
+      const raw = readFileSync(file)
+      const body = raw[0] === 0x1f && raw[1] === 0x8b ? gunzipSync(raw) : raw
+      return { file: relative(DIST, file), body: body.toString('utf8') }
+    })
+
+  it.each(drafts)('$url 的標題、網址和內文都不在網站任何地方（頁面、側欄、首頁、搜尋索引）', (draft) => {
+    // 內文裡獨一無二的記號，只可能從這篇草稿來
+    const marker = draft.source.match(/\bdraftmarker\w+/)?.[0]
+    expect(marker, '草稿內文要放一個 draftmarker 記號').toBeTruthy()
+    const leaks = distContents()
+      .filter(({ body }) => [draft.title, draft.url, marker!].some((s) => body.includes(s)))
+      .map(({ file }) => file)
+    expect(leaks).toEqual([])
+  })
 })
 
 describe('語言', () => {
