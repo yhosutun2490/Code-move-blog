@@ -20,6 +20,7 @@ export default defineConfig({
       customCss: ['./src/styles/tokens.css', './src/styles/islands.css'],
       components: {
         PageTitle: './src/components/overrides/PageTitle.astro',
+        SiteTitle: './src/components/overrides/SiteTitle.astro',
       },
       // 一般程式碼區塊和 MagicSteps 用同一個主題
       expressiveCode: { themes: [CODE_THEME] },

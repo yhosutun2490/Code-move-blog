@@ -229,4 +229,14 @@ describe('系列辨識', () => {
   it.each(published)('$url 標題正下方是這篇的導言', (article) => {
     expect(text(besideTitle(article.url).after)).toBe(article.description)
   })
+
+  it.each(published)('$url 頁首有 mobx/motion 字標，點了回首頁', (article) => {
+    const mark = loadPage(article.url)
+      .querySelectorAll('header a')
+      .find((a) => text(a) === 'mobx/motion')
+    expect(mark, '找不到字標').toBeTruthy()
+    expect(mark!.getAttribute('href')).toBe('/')
+    // 斜線要單獨包起來才能上 MobX 橘
+    expect(mark!.querySelectorAll('*').some((el) => text(el) === '/')).toBe(true)
+  })
 })

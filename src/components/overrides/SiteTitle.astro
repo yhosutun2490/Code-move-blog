@@ -1,0 +1,21 @@
+---
+// 頁首字標：斜線用 MobX 橘，點了回首頁
+const { siteTitleHref } = Astro.locals.starlightRoute
+---
+
+<a href={siteTitleHref} class="site-title" translate="no">mobx<span class="slash">/</span>motion</a>
+
+<style>
+  .site-title {
+    font-family: var(--font-mono, var(--sl-font-mono));
+    font-size: var(--sl-text-lg);
+    font-weight: 600;
+    color: var(--sl-color-white);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .slash {
+    color: var(--accent, var(--sl-color-orange));
+  }
+</style>
