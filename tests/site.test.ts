@@ -20,3 +20,25 @@ describe('文章網址', () => {
     }
   })
 })
+
+describe('首頁', () => {
+  // 只看主內容區，避免把側欄或頁首的連結也算進來
+  const main = () => loadPage('/').querySelector('main')!
+  const articleLinks = () =>
+    main()
+      .querySelectorAll('a')
+      .filter((a) => articles.some((article) => article.url === a.getAttribute('href')))
+
+  it('依篇章順序列出所有非草稿文章', () => {
+    const hrefs = [...new Set(articleLinks().map((a) => a.getAttribute('href')))]
+    expect(hrefs).toEqual(published.map((a) => a.url))
+  })
+
+  it.each(published)('$url 在列表裡有編號、標題和簡介', (article) => {
+    const link = articleLinks().find((a) => a.getAttribute('href') === article.url)!
+    const item = text(link.closest('li') ?? link)
+    expect(item).toContain(String(article.order).padStart(2, '0'))
+    expect(item).toContain(article.title)
+    expect(item).toContain(article.description)
+  })
+})
