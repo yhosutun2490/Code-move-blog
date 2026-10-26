@@ -4,17 +4,20 @@ import Default from '@astrojs/starlight/components/PageTitle.astro'
 import { getCollection } from 'astro:content'
 
 const { entry } = Astro.locals.starlightRoute
-// 首頁之類的非文章頁也會用到 PageTitle，不能顯示「第 0 篇」
 const isPost = entry.id.startsWith('mobx/')
+// 首頁（系列封面）也用這個標題區：上方是系列名，不是「第 0 篇」
+const isHome = entry.id === ''
 const total = isPost
   ? (await getCollection('docs', ({ id, data }) => id.startsWith('mobx/') && !data.draft)).length
   : 0
 const { order, description } = entry.data
+const eyebrow = isPost ? `MobX 拆解 · 第 ${order} 篇 / 共 ${total} 篇` : isHome ? '自我學習系列' : undefined
+const lede = isPost || isHome ? description : undefined
 ---
 
-{isPost && <p class="eyebrow">MobX 拆解 · 第 {order} 篇 / 共 {total} 篇</p>}
+{eyebrow && <p class="eyebrow">{eyebrow}</p>}
 <Default />
-{isPost && description && <p class="lede">{description}</p>}
+{lede && <p class="lede">{lede}</p>}
 
 <style>
   .eyebrow {

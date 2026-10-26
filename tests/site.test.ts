@@ -49,6 +49,15 @@ describe('首頁', () => {
       .querySelectorAll('a')
       .filter((a) => articles.some((article) => article.url === a.getAttribute('href')))
 
+  it('是系列封面：標題上方是系列名，下方是導言', () => {
+    const h1 = loadPage('/').querySelector('h1')!
+    expect(text(h1)).toBe('把 MobX 拆開來看')
+    const siblings = h1.parentNode.childNodes.filter((n) => n.nodeType === 1) as HTMLElement[]
+    const i = siblings.indexOf(h1)
+    expect(text(siblings[i - 1])).toBe('自我學習系列')
+    expect(text(siblings[i + 1])).toMatch(/^從最基本的 getter \/ setter 開始，一步一步疊出依賴追蹤/)
+  })
+
   it('依篇章順序列出所有非草稿文章', () => {
     const hrefs = [...new Set(articleLinks().map((a) => a.getAttribute('href')))]
     expect(hrefs).toEqual(published.map((a) => a.url))
@@ -60,6 +69,25 @@ describe('首頁', () => {
     expect(item).toContain(String(article.order).padStart(2, '0'))
     expect(item).toContain(article.title)
     expect(item).toContain(article.description)
+  })
+
+  // 讀者在頁首看得到、按得到的東西：字標、搜尋、主題選單
+  const chrome = (url: string) => {
+    const header = loadPage(url).querySelector('header')
+    const mark = header?.querySelectorAll('a').find((a) => text(a) === 'mobx/motion')
+    return {
+      mark: mark?.getAttribute('href'),
+      search: Boolean(header?.querySelector('button[aria-label="搜尋"]')),
+      themes: header
+        ?.querySelectorAll('starlight-theme-select option')
+        .map((o) => o.getAttribute('value'))
+        .sort(),
+    }
+  }
+
+  it.each(published)('頁首、搜尋和主題切換和 $url 一樣', (article) => {
+    expect(chrome('/')).toEqual(chrome(article.url))
+    expect(chrome('/').search).toBe(true)
   })
 })
 
@@ -268,7 +296,7 @@ describe('系列辨識', () => {
     expect(mark!.querySelectorAll('*').some((el) => text(el) === '/')).toBe(true)
   })
 
-  it.each(published)('$url 頁尾寫著用什麼打造', (article) => {
+  it.each([{ url: '/' }, ...published])('$url 頁尾寫著用什麼打造', (article) => {
     // 頁尾 = 主內容區最後讀到的文字（排在上一篇 / 下一篇之後）
     const main = loadPage(article.url).querySelector('main')!
     main.querySelectorAll('script, style, template').forEach((el) => el.remove())

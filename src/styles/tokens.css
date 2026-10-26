@@ -1,7 +1,6 @@
 /* 設計 token：顏色、字體、版心寬度只在這裡定義，首頁和 Starlight 文章頁共用。
    深淺色跟著 Starlight 的主題選單（<html data-theme>）切換，不看系統設定；
-   選「跟隨系統」時由 Starlight 依系統設定寫入 data-theme。
-   沒有 data-theme 的頁面（還沒搬進 Starlight 的首頁）一律是淺色。 */
+   選「跟隨系統」時由 Starlight 依系統設定寫入 data-theme。 */
 
 /* ---------- 品牌 token：淺色 ---------- */
 :root,
