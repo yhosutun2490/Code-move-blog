@@ -1,6 +1,8 @@
-# mobx/motion
+# code move blog
 
-MobX 自我學習系列：Astro + shiki-magic-move + MobX 互動 demo。
+最近發現Shiki move code animation 可以讓程式碼變成動畫，剛好工作上的工具也需要讀文件，玩玩Astro紀錄一下心得吧~!
+
+### MobX 自我學習系列 (進行中)。
 
 ## 本機啟動
 
