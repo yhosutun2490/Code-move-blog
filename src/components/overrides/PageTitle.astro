@@ -1,9 +1,34 @@
 ---
-// 標題下方用導言樣式顯示這篇的簡介（Starlight 預設只放在 <meta>）
+// 標題上方標出系列位置，下方用導言樣式顯示簡介（Starlight 預設只放在 <meta>）
 import Default from '@astrojs/starlight/components/PageTitle.astro'
+import { getCollection } from 'astro:content'
 
-const { description } = Astro.locals.starlightRoute.entry.data
+const { entry } = Astro.locals.starlightRoute
+// 首頁之類的非文章頁也會用到 PageTitle，不能顯示「第 0 篇」
+const isPost = entry.id.startsWith('mobx/')
+const total = isPost
+  ? (await getCollection('docs', ({ id, data }) => id.startsWith('mobx/') && !data.draft)).length
+  : 0
+const { order, description } = entry.data
 ---
 
+{isPost && <p class="eyebrow">MobX 拆解 · 第 {order} 篇 / 共 {total} 篇</p>}
 <Default />
-{description && <p class="lede">{description}</p>}
+{isPost && description && <p class="lede">{description}</p>}
+
+<style>
+  .eyebrow {
+    font-family: var(--font-mono, var(--sl-font-mono));
+    font-size: var(--sl-text-xs);
+    letter-spacing: 0.08em;
+    color: var(--accent, var(--sl-color-accent));
+    margin: 0 0 0.5rem;
+  }
+
+  .lede {
+    color: var(--ink-soft, var(--sl-color-gray-2));
+    font-size: var(--sl-text-lg);
+    line-height: 1.7;
+    margin: 0.75rem 0 0;
+  }
+</style>

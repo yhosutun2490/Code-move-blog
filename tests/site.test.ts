@@ -1,6 +1,7 @@
 /// <reference types="node" />
 import { existsSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import type { HTMLElement } from 'node-html-parser'
 import { describe, expect, it } from 'vitest'
 import {
   articles,
@@ -204,5 +205,28 @@ describe('語言', () => {
     const english = /Skip to content|On this page|Overview|Section titled|Select theme|\bPrevious\b|\bNext\b|\bSearch\b|\bMenu\b/
     expect(ui).not.toMatch(english)
     expect(ui).not.toMatch(/\b(skipLink|search|tableOfContents|themeSelect|page|heading|menuButton|sidebarNav)\.[a-zA-Z]+/)
+  })
+})
+
+describe('系列辨識', () => {
+  // 標題前後緊鄰的元素：上方是系列位置，下方是導言
+  const besideTitle = (url: string) => {
+    const h1 = loadPage(url).querySelector('h1')!
+    const siblings = h1.parentNode.childNodes.filter((n) => n.nodeType === 1)
+    const i = siblings.indexOf(h1)
+    return { before: siblings[i - 1], after: siblings[i + 1] } as {
+      before?: HTMLElement
+      after?: HTMLElement
+    }
+  }
+
+  it.each(published)('$url 標題上方寫著這是系列的第幾篇、共幾篇', (article) => {
+    expect(text(besideTitle(article.url).before)).toBe(
+      `MobX 拆解 · 第 ${article.order} 篇 / 共 ${published.length} 篇`,
+    )
+  })
+
+  it.each(published)('$url 標題正下方是這篇的導言', (article) => {
+    expect(text(besideTitle(article.url).after)).toBe(article.description)
   })
 })
