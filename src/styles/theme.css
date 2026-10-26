@@ -1,0 +1,34 @@
+/* 紙張風格的排版：只引用 tokens.css 的值，不另外定義顏色或字體 */
+
+/* 中文長文：字稍大、行距放寬 */
+.sl-markdown-content {
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  letter-spacing: 0.01em;
+  overflow-wrap: break-word;
+}
+
+/* 標題用襯線體；.not-content 裡的互動元件不受影響 */
+h1#_top,
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6):not(:where(.not-content *)) {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+
+h1#_top {
+  font-weight: 900;
+}
+
+/* 讀者設定「減少動態效果」時，動畫和過場幾乎瞬間完成 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}

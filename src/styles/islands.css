@@ -277,9 +277,3 @@
   font-size: 0.75rem;
   color: var(--accent);
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .demo-log li {
-    animation: none;
-  }
-}

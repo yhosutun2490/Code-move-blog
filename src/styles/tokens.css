@@ -1,5 +1,11 @@
-/* 設計 token：首頁和 Starlight 文章頁共用 */
-:root {
+/* 設計 token：顏色、字體、版心寬度只在這裡定義，首頁和 Starlight 文章頁共用。
+   深淺色跟著 Starlight 的主題選單（<html data-theme>）切換，不看系統設定；
+   選「跟隨系統」時由 Starlight 依系統設定寫入 data-theme。
+   沒有 data-theme 的頁面（還沒搬進 Starlight 的首頁）一律是淺色。 */
+
+/* ---------- 品牌 token：淺色 ---------- */
+:root,
+::backdrop {
   --paper: #f6f1e7;
   --paper-2: #efe7d8;
   --ink: #1d1a16;
@@ -7,6 +13,7 @@
   --rule: #d9cfbd;
   --accent: #e8590c;          /* MobX 橘 */
   --accent-soft: #fde3d0;
+  --accent-text: #b04a08;     /* 紙上的橘色文字，對比度夠讀 */
   --code-bg: #121212;          /* 對齊 vitesse-dark */
   --get: #2f7d6d;
   --set: #b4500a;
@@ -16,21 +23,76 @@
   --font-body: 'Noto Sans TC', system-ui, sans-serif;
   --font-display: 'Noto Serif TC', Georgia, serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --measure: 44rem;
+
+  --measure: 40rem;            /* 內文欄寬，中文一行約 37 字 */
+  --text-body: 1.0625rem;
+  --leading-body: 1.85;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #16130f;
-    --paper-2: #1f1b16;
-    --ink: #ece4d6;
-    --ink-soft: #a89e8e;
-    --rule: #3a332a;
-    --accent: #ff8a3d;
-    --accent-soft: #3a2414;
-    --get: #5fc4ad;
-    --set: #ff9d57;
-    --run: #a59cff;
-    --skip: #7d7568;
-  }
+/* ---------- 品牌 token：深色（暖色深底配亮橘） ---------- */
+:root[data-theme='dark'],
+[data-theme='dark'] ::backdrop {
+  --paper: #16130f;
+  --paper-2: #1f1b16;
+  --ink: #ece4d6;
+  --ink-soft: #a89e8e;
+  --rule: #3a332a;
+  --accent: #ff8a3d;
+  --accent-soft: #3a2414;
+  --accent-text: #ff8a3d;
+  --get: #5fc4ad;
+  --set: #ff9d57;
+  --run: #a59cff;
+  --skip: #7d7568;
+}
+
+/* ---------- 對應到 Starlight：兩種主題共用的部分 ---------- */
+:root,
+::backdrop {
+  --sl-color-accent-low: var(--accent-soft);
+  --sl-color-accent: var(--accent);
+  --sl-color-text: var(--ink);
+  --sl-color-text-accent: var(--accent-text);
+  --sl-color-bg: var(--paper);
+  --sl-color-bg-nav: var(--paper);
+  --sl-color-bg-sidebar: var(--paper);
+  --sl-color-hairline-light: var(--rule);
+  --sl-color-hairline: var(--rule);
+  --sl-color-hairline-shade: var(--rule);
+
+  --sl-font: var(--font-body);
+  --sl-font-mono: var(--font-mono);
+  --sl-content-width: var(--measure);
+  --sl-line-height-headings: 1.35;
+}
+
+/* Starlight 的灰階方向會隨主題反轉：white 是最強的文字色，black 是頁面底色 */
+:root,
+::backdrop {
+  --sl-color-accent-high: #8f3c06;
+  --sl-color-white: var(--ink);
+  --sl-color-gray-1: #2a251f;
+  --sl-color-gray-2: #3b352d;
+  --sl-color-gray-3: var(--ink-soft);
+  --sl-color-gray-4: #8a8275;
+  --sl-color-gray-5: var(--rule);
+  --sl-color-gray-6: var(--paper-2);
+  --sl-color-gray-7: #f2ece0;
+  --sl-color-black: var(--paper);
+  --sl-color-backdrop-overlay: rgb(60 48 32 / 0.45);
+}
+
+:root[data-theme='dark'],
+[data-theme='dark'] ::backdrop {
+  --sl-color-accent-high: #ffc49a;
+  --sl-color-white: #f8f1e5;
+  --sl-color-gray-1: var(--ink);
+  --sl-color-gray-2: #d0c6b5;
+  --sl-color-gray-3: var(--ink-soft);
+  --sl-color-gray-4: #6f675a;
+  --sl-color-gray-5: var(--rule);
+  --sl-color-gray-6: var(--paper-2);
+  --sl-color-gray-7: #1a1612;
+  --sl-color-black: var(--paper);
+  --sl-color-backdrop-overlay: rgb(8 6 4 / 0.66);
 }

@@ -1,15 +1,9 @@
 /* 只給首頁用（還沒搬進 Starlight 的舊版型） */
 @import './tokens.css';
 
-/* Starlight 頁面的明暗由它自己的主題切換管，這裡只管首頁 */
+/* 首頁還沒有主題切換，token 固定是淺色（搬進 Starlight 後由它的主題選單管） */
 :root {
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-  }
 }
 
 /* ---------- base ---------- */
