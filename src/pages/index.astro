@@ -1,35 +1,93 @@
 ---
+// 系列封面：用 Starlight 的頁面包起來，頁首、搜尋、主題切換和文章頁共用；
+// 不用文件首頁範本，也不放側欄和本頁目錄。
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro'
 import { getCollection } from 'astro:content'
-import BaseLayout from '../layouts/BaseLayout.astro'
 
 const posts = (
   await getCollection('docs', ({ id, data }) => id.startsWith('mobx/') && !data.draft)
 ).sort((a, b) => a.data.order - b.data.order)
 ---
 
-<BaseLayout title="mobx/motion · MobX 拆解筆記">
-  <main class="home">
-    <p class="eyebrow">自我學習系列</p>
-    <h1>把 MobX 拆開來看</h1>
-    <p class="lede">
-      從最基本的 getter / setter 開始，一步一步疊出依賴追蹤、computed、action 與 observer。
-      每篇都有程式碼動畫和可以直接玩的 demo。
-    </p>
+<StarlightPage
+  frontmatter={{
+    title: '把 MobX 拆開來看',
+    description:
+      '從最基本的 getter / setter 開始，一步一步疊出依賴追蹤、computed、action 與 observer。每篇都有程式碼動畫和可以直接玩的 demo。',
+    // 封面不是文章：不排序、不進搜尋索引、沒有本頁目錄和上下篇
+    order: 0,
+    pagefind: false,
+    tableOfContents: false,
+    prev: false,
+    next: false,
+  }}
+  hasSidebar={false}
+>
+  <ol class="series not-content">
+    {
+      posts.map((post) => (
+        <li>
+          <a href={`/${post.id}/`}>
+            <span class="series-num">{String(post.data.order).padStart(2, '0')}</span>
+            <span class="series-body">
+              <span class="series-title">{post.data.title}</span>
+              <span class="series-desc">{post.data.description}</span>
+            </span>
+          </a>
+        </li>
+      ))
+    }
+  </ol>
+</StarlightPage>
 
-    <ol class="series">
-      {
-        posts.map((post) => (
-          <li>
-            <a href={`/${post.id}/`}>
-              <span class="series-num">{String(post.data.order).padStart(2, '0')}</span>
-              <span class="series-body">
-                <span class="series-title">{post.data.title}</span>
-                <span class="series-desc">{post.data.description}</span>
-              </span>
-            </a>
-          </li>
-        ))
-      }
-    </ol>
-  </main>
-</BaseLayout>
+<style>
+  /* 封面和文章內文同一個版心寬度（Starlight 沒側欄的頁面預設很寬） */
+  :global(:root:not([data-has-sidebar])) {
+    --sl-content-width: var(--measure);
+  }
+
+  .series {
+    list-style: none;
+    padding: 0;
+    margin: 3rem 0 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .series a {
+    display: flex;
+    gap: 1.25rem;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .series-num {
+    font-family: var(--font-mono);
+    color: var(--accent-text);
+    font-size: 0.9rem;
+    padding-top: 0.35rem;
+  }
+
+  .series-body {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .series-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.3rem;
+    line-height: 1.4;
+  }
+
+  .series a:hover .series-title {
+    color: var(--accent-text);
+  }
+
+  .series-desc {
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+</style>

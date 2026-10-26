@@ -36,13 +36,11 @@ src/
 │   ├── MagicStepper.tsx       # React island：上一步／下一步 + 動畫
 │   └── overrides/             # 覆寫 Starlight 的元件（標題區加導言）
 ├── lib/highlighter.ts         # 共用 Shiki highlighter 與主題
-├── layouts/BaseLayout.astro   # 只剩首頁在用
-├── pages/index.astro          # 系列列表（文章頁由 Starlight 產生）
+├── pages/index.astro          # 系列封面，包在 Starlight 頁面裡（文章頁由 Starlight 產生）
 ├── routeData.ts               # 把側欄攤平成一串篇章連結
 └── styles/
     ├── tokens.css             # 淺色／深色主題 token
-    ├── islands.css            # MagicSteps 和 demo 的樣式
-    └── global.css             # 首頁樣式
+    └── islands.css            # MagicSteps 和 demo 的樣式
 ```
 
 ## 新增一篇文章
