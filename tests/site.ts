@@ -9,6 +9,8 @@ import { parse as parseYaml } from 'yaml'
 
 export const ROOT = join(import.meta.dirname, '..')
 export const DIST = join(ROOT, 'dist')
+// 程式碼區塊樣本頁的 build 結果（見 tests/fixtures/code-blocks），不屬於正式網站
+export const CODE_BLOCKS_DIST = join(ROOT, 'tests/fixtures/code-blocks/dist')
 
 export interface Article {
   folder: string
@@ -60,8 +62,8 @@ export const articles = loadArticles()
 export const published = articles.filter((a) => !a.draft)
 
 // 網址 → dist 裡對應的 HTML 檔
-export function pagePath(url: string) {
-  return join(DIST, url, 'index.html')
+export function pagePath(url: string, dist = DIST) {
+  return join(dist, url, 'index.html')
 }
 
 export function pageExists(url: string) {
@@ -69,8 +71,11 @@ export function pageExists(url: string) {
   return existsSync(path) && statSync(path).isFile()
 }
 
-export function loadPage(url: string): HTMLElement {
-  return parse(readFileSync(pagePath(url), 'utf8'))
+export function loadPage(url: string, dist = DIST): HTMLElement {
+  // <pre> 也要解析成元素（預設會當成純文字），才看得到程式碼區塊裡的每一行
+  return parse(readFileSync(pagePath(url, dist), 'utf8'), {
+    blockTextElements: { script: true, noscript: true, style: true },
+  })
 }
 
 export function distFiles(dir = DIST): string[] {
@@ -81,8 +86,8 @@ export function distFiles(dir = DIST): string[] {
 }
 
 // 讀者瀏覽器可能下載到的所有 JS
-export function clientScripts() {
-  return distFiles().filter((file) => /\.(m?js)$/.test(file))
+export function clientScripts(dist = DIST) {
+  return distFiles(dist).filter((file) => /\.(m?js)$/.test(file))
 }
 
 // 壓掉空白，方便比對讀者看到的文字

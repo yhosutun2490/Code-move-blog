@@ -6,7 +6,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "astro build && vitest run",
+    "test": "astro build --config tests/fixtures/code-blocks/astro.config.mjs && astro build && vitest run",
     "test:dist": "vitest run"
   },
   "dependencies": {
