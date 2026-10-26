@@ -1,4 +1,6 @@
 {
   "page.previousLink": "上一篇",
-  "page.nextLink": "下一篇"
+  "page.nextLink": "下一篇",
+  "heading.anchorLabel": "「{{title}}」段落連結",
+  "page.draft": "這是草稿，正式版不會發布。"
 }

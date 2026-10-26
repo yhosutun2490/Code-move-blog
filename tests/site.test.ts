@@ -172,3 +172,28 @@ describe('文章頁導覽', () => {
     },
   )
 })
+
+describe('語言', () => {
+  it.each(['/', ...published.map((a) => a.url)])('%s 的頁面語言是繁體中文', (url) => {
+    expect(loadPage(url).querySelector('html')!.getAttribute('lang')).toMatch(/^zh-(TW|Hant)/)
+  })
+
+  // 讀者看得到或螢幕閱讀器念得出來的介面文字（不含 script 內容）
+  const uiText = (url: string) => {
+    const page = loadPage(url)
+    page.querySelectorAll('script, style, template').forEach((el) => el.remove())
+    const labels = page.querySelectorAll('[aria-label]').map((el) => el.getAttribute('aria-label'))
+    return [text(page.querySelector('body')), ...labels].join('\n')
+  }
+
+  it.each(published)('$url 的介面字串是中文', (article) => {
+    const ui = uiText(article.url)
+    for (const label of ['跳到內容', '搜尋', '本頁內容', '深色', '淺色']) {
+      expect(ui).toContain(label)
+    }
+    // Starlight 的英文預設字串，或沒翻到而直接露出的字串 key
+    const english = /Skip to content|On this page|Overview|Section titled|Select theme|\bPrevious\b|\bNext\b|\bSearch\b|\bMenu\b/
+    expect(ui).not.toMatch(english)
+    expect(ui).not.toMatch(/\b(skipLink|search|tableOfContents|themeSelect|page|heading|menuButton|sidebarNav)\.[a-zA-Z]+/)
+  })
+})
