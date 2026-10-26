@@ -1,0 +1,34 @@
+---
+title: 程式碼區塊樣本
+description: 只給測試用，不會出現在正式網站。
+order: 1
+---
+
+## 一般程式碼區塊
+
+和 MagicSteps 第二步同一段程式碼，用來比對配色。
+
+```js
+const cart = {}
+let price = 100
+
+Object.defineProperty(cart, 'price', {
+  get() {
+    console.log('有人讀了 price')
+    return price
+  },
+  set(next) {
+    console.log('有人改了 price')
+    price = next
+  },
+})
+```
+
+## 檔名、重點行、新增與刪除
+
+```js title="cart.js" {2} ins={3} del={4}
+const cart = {}
+let price = 100
+cart.price = 120
+cart.price = 80
+```

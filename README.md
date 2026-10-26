@@ -49,6 +49,7 @@ src/
 2. 改 `index.mdx` 的 frontmatter（`title`、`description`、`order`，少一個 build 就會失敗）。`order` 同時決定側欄、首頁和上下篇的順序
 3. 在 `demos/steps/` 放每一步的程式碼，`steps.ts` 寫標題和說明
 4. 文章裡用 `<MagicSteps steps={steps} />` 放動畫，互動 demo 用 `client:visible` 載入，外面包一層 `<div class="not-content">` 避開 Starlight 的文章排版
+5. 一般程式碼區塊照常用 ```` ``` ```` 圍起來，自帶複製按鈕；要檔名、重點行、新增／刪除行就寫 ```` ```js title="cart.js" {2} ins={3} del={4} ````
 
 草稿可以在 frontmatter 加 `draft: true`，正式 build 時就不會出現在列表、側欄和路由裡（`npm run dev` 仍看得到）。
 
