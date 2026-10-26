@@ -1,0 +1,33 @@
+---
+/**
+ * 在 build 時把每個步驟的程式碼預先轉成 keyed tokens，
+ * client 端的 island 只拿到 JSON，不需要下載 Shiki。
+ *
+ * 用法（在 MDX 裡）：
+ *   import MagicSteps from '../../../components/MagicSteps.astro'
+ *   import { steps } from './demos/steps'
+ *   <MagicSteps steps={steps} />
+ */
+import { codeToKeyedTokens, createMagicMoveMachine } from 'shiki-magic-move/core'
+import { CODE_THEME, getHighlighter } from '../lib/highlighter'
+import MagicStepper from './MagicStepper'
+import type { Step } from '../lib/types'
+
+interface Props {
+  steps: Step[]
+  lang?: string
+}
+
+const { steps, lang = 'js' } = Astro.props
+const highlighter = await getHighlighter()
+
+const machine = createMagicMoveMachine(
+  (code) => codeToKeyedTokens(highlighter, code, { lang, theme: CODE_THEME }),
+)
+
+// 每個步驟都和前一步比對，讓相同的 token 共用 key → 動畫時才知道誰該滑去哪
+const compiled = steps.map((step) => machine.commit(step.code.trimEnd()).current)
+const meta = steps.map(({ title, note }) => ({ title, note }))
+---
+
+<MagicStepper client:visible steps={compiled} meta={meta} />

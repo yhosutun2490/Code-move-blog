@@ -1,0 +1,59 @@
+---
+title: 從 getter / setter 到迷你 autorun
+description: MobX 的魔法拆開來，其實就是「攔截讀寫」加上「記住誰讀過我」。這篇用不到 30 行手寫一個會自動更新的 autorun。
+order: 1
+---
+
+import MagicSteps from '../../../components/MagicSteps.astro'
+import { steps } from './demos/steps'
+import MiniReactiveDemo from './demos/MiniReactiveDemo'
+import MobxCartDemo from './demos/MobxCartDemo'
+
+用 MobX 的時候，我們只是改了 `cart.qty = 3`，畫面就自己更新了。沒有 `setState`，也沒有 dispatch。它到底怎麼知道「誰需要被更新」？
+
+答案藏在 JavaScript 很早就有的兩個東西裡：**getter** 和 **setter**。這篇從零開始，一步步把一個普通物件變成會自動追蹤依賴的響應式物件。
+
+## 一步一步演化
+
+點「下一步」，或聚焦在程式碼區塊後用 ← → 鍵切換。注意每一步**多出來的那幾行**。
+
+<MagicSteps steps={steps} />
+
+整個機制只有兩個關鍵動作：
+
+1. **讀取時收集**：在 `autorun` 執行期間，`activeEffect` 指向目前的 effect。任何 getter 被觸發，就把它記進自己的 `subscribers`。
+2. **寫入時通知**：setter 被觸發時，把 `subscribers` 裡的 effect 全部重跑一次。
+
+依賴關係不是我們手動宣告的，而是**執行一次就自動記下來**的。
+
+## 動手玩：手寫版
+
+下面這個 demo 跑的就是上面步驟 5 的程式碼，只是多印了 log。試著按「改 note」，看看和按「qty + 1」有什麼不同。
+
+<MiniReactiveDemo client:visible />
+
+你會發現：
+
+- 改 `price` 或 `qty`，setter 找到 1 個訂閱者，autorun 重跑
+- 改 `note`，setter 發現**沒有訂閱者**，什麼都不做
+
+這就是「精準更新」的來源：只有真的讀過的人才會被通知。
+
+## 對照：MobX 版
+
+同一個購物車，換成 MobX。欄位用 `makeAutoObservable` 變成 observable，`get total()` 自動變成 computed，`observer` 包住的元件就是一個特殊的 autorun。
+
+<MobxCartDemo client:visible />
+
+右下角的 `render ×` 是元件的渲染次數。改 `note` 時，只有 `NoteView` 會重新渲染，`TotalView` 動都不動。原理跟手寫版完全一樣：`TotalView` 在 render 時從來沒讀過 `note`。
+
+## 我們的迷你版少了什麼
+
+手寫版能跑，但離 MobX 還很遠。下一篇之前可以先想想這幾個問題：
+
+- **新增的 key 不會被追蹤**：`Object.defineProperty` 只能處理建立當下就存在的 key。`cart.coupon = 'X'` 完全不會被攔截。這正是 MobX 從 5 版起，`observable({...})` 建立的物件改用 **Proxy** 的原因。（有趣的是，上面 class 搭配 `makeAutoObservable` 的寫法，MobX 其實還是在實例上定義 getter / setter，因為 class 的欄位是固定的。）
+- **舊的依賴不會被清掉**：如果 autorun 裡有 `if`，某次執行不再讀 `price`，它仍然留在 `price` 的訂閱者清單裡。
+- **沒有批次更新**：連續改 `price` 和 `qty`，autorun 會跑兩次。MobX 用 `action` 把多次寫入包成一次通知。
+- **沒有 computed 快取**：`total` 每次讀都會重算，MobX 的 computed 只在依賴變動時才重算。
+
+下一篇：**用 Proxy 重寫 observable**，順便解決第一個問題。
