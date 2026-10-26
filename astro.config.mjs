@@ -21,6 +21,7 @@ export default defineConfig({
       components: {
         PageTitle: './src/components/overrides/PageTitle.astro',
         SiteTitle: './src/components/overrides/SiteTitle.astro',
+        Footer: './src/components/overrides/Footer.astro',
       },
       // 一般程式碼區塊和 MagicSteps 用同一個主題
       expressiveCode: { themes: [CODE_THEME] },

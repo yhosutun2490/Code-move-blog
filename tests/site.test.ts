@@ -239,4 +239,11 @@ describe('系列辨識', () => {
     // 斜線要單獨包起來才能上 MobX 橘
     expect(mark!.querySelectorAll('*').some((el) => text(el) === '/')).toBe(true)
   })
+
+  it.each(published)('$url 頁尾寫著用什麼打造', (article) => {
+    // 頁尾 = 主內容區最後讀到的文字（排在上一篇 / 下一篇之後）
+    const main = loadPage(article.url).querySelector('main')!
+    main.querySelectorAll('script, style, template').forEach((el) => el.remove())
+    expect(text(main)).toMatch(/用 Astro、shiki-magic-move 與 MobX 打造$/)
+  })
 })

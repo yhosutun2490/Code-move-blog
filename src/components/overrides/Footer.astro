@@ -1,0 +1,17 @@
+---
+// 預設頁尾裡有上一篇 / 下一篇，所以包著它，不是取代它
+import Default from '@astrojs/starlight/components/Footer.astro'
+---
+
+<Default />
+<p class="built">用 Astro、shiki-magic-move 與 MobX 打造</p>
+
+<style>
+  .built {
+    margin: 3rem 0 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule, var(--sl-color-hairline));
+    color: var(--ink-soft, var(--sl-color-gray-3));
+    font-size: var(--sl-text-sm);
+  }
+</style>
