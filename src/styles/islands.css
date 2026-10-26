@@ -1,0 +1,285 @@
+/* 文章裡的互動元件：MagicSteps 程式碼動畫和各篇的 demo */
+
+/* ---------- magic move stepper ---------- */
+.stepper {
+  margin: 2rem 0;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--paper-2);
+}
+
+.stepper:focus-visible {
+  outline-offset: 0;
+}
+
+.stepper-tabs {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.stepper-tabs li {
+  flex: 0 0 auto;
+}
+
+/* 窄螢幕：非目前步驟只留數字，避免分頁列擠成好幾行 */
+@media (max-width: 40rem) {
+  .stepper-tabs button:not([aria-current='step']) .stepper-label {
+    display: none;
+  }
+}
+
+.stepper-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.stepper-tabs button:hover {
+  color: var(--ink);
+}
+
+.stepper-tabs button[aria-current='step'] {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 1px 0 var(--rule);
+}
+
+.stepper-num {
+  display: inline-grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  background: var(--rule);
+  color: var(--ink);
+}
+
+.stepper-tabs button[aria-current='step'] .stepper-num {
+  background: var(--accent);
+  color: #fff;
+}
+
+.stepper-code {
+  background: var(--code-bg);
+  min-height: 12rem;
+}
+
+.stepper-code .shiki-magic-move-container {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  line-height: 1.65;
+  margin: 0;
+  padding: 1.25rem 1.4rem;
+  overflow-x: auto;
+}
+
+.stepper-footer {
+  padding: 1rem 1.25rem 1.1rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.stepper-note {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+
+.stepper-note strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  margin-bottom: 0.15rem;
+}
+
+.stepper-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.stepper-nav button,
+.demo-actions button {
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.stepper-nav button:hover:not(:disabled),
+.demo-actions button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.stepper-nav button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.stepper-count {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+/* ---------- demos ---------- */
+.demo {
+  margin: 2rem 0;
+  padding: 1.1rem 1.25rem 1.25rem;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: var(--paper-2);
+}
+
+.demo-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
+}
+
+.demo-tag {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.demo-tag.mobx {
+  background: var(--accent);
+  color: #fff;
+}
+
+.demo-total {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.demo-total output,
+.demo-card output {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 1.5rem;
+  margin-left: 0.35rem;
+}
+
+.demo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.demo-actions .ghost {
+  margin-left: auto;
+  background: transparent;
+  color: var(--ink-soft);
+}
+
+.demo-log {
+  list-style: none;
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  height: 15rem;
+  overflow-y: auto;
+}
+
+.demo-log li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.15rem 0;
+  animation: log-in 0.25s ease-out;
+}
+
+.demo-log li.empty {
+  color: var(--ink-soft);
+}
+
+.demo-log .badge {
+  flex: 0 0 2.6rem;
+  text-align: center;
+  font-size: 0.68rem;
+  border-radius: 4px;
+  padding: 0 0.25rem;
+  color: #fff;
+}
+
+.demo-log [data-kind='get'] .badge { background: var(--get); }
+.demo-log [data-kind='set'] .badge { background: var(--set); }
+.demo-log [data-kind='run'] .badge { background: var(--run); }
+.demo-log [data-kind='skip'] .badge { background: var(--skip); }
+.demo-log [data-kind='skip'] { color: var(--ink-soft); }
+
+@keyframes log-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.demo-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+}
+
+.demo-card {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+}
+
+.demo-card output {
+  margin-left: 0;
+}
+
+.demo-card-label {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.render-count {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-log li {
+    animation: none;
+  }
+}

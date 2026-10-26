@@ -1,0 +1,36 @@
+/* 設計 token：首頁和 Starlight 文章頁共用 */
+:root {
+  --paper: #f6f1e7;
+  --paper-2: #efe7d8;
+  --ink: #1d1a16;
+  --ink-soft: #5b544a;
+  --rule: #d9cfbd;
+  --accent: #e8590c;          /* MobX 橘 */
+  --accent-soft: #fde3d0;
+  --code-bg: #121212;          /* 對齊 vitesse-dark */
+  --get: #2f7d6d;
+  --set: #b4500a;
+  --run: #5a4fcf;
+  --skip: #8a8275;
+
+  --font-body: 'Noto Sans TC', system-ui, sans-serif;
+  --font-display: 'Noto Serif TC', Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --measure: 44rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #16130f;
+    --paper-2: #1f1b16;
+    --ink: #ece4d6;
+    --ink-soft: #a89e8e;
+    --rule: #3a332a;
+    --accent: #ff8a3d;
+    --accent-soft: #3a2414;
+    --get: #5fc4ad;
+    --set: #ff9d57;
+    --run: #a59cff;
+    --skip: #7d7568;
+  }
+}

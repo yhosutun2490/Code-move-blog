@@ -4,7 +4,7 @@
  * client 端的 island 只拿到 JSON，不需要下載 Shiki。
  *
  * 用法（在 MDX 裡）：
- *   import MagicSteps from '../../../components/MagicSteps.astro'
+ *   import MagicSteps from '../../../../components/MagicSteps.astro'
  *   import { steps } from './demos/steps'
  *   <MagicSteps steps={steps} />
  */
@@ -30,4 +30,7 @@ const compiled = steps.map((step) => machine.commit(step.code.trimEnd()).current
 const meta = steps.map(({ title, note }) => ({ title, note }))
 ---
 
-<MagicStepper client:visible steps={compiled} meta={meta} />
+{/* not-content：不讓 Starlight 的文章排版樣式滲進 stepper */}
+<div class="not-content">
+  <MagicStepper client:visible steps={compiled} meta={meta} />
+</div>

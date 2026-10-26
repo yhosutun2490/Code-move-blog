@@ -1,0 +1,9 @@
+---
+// 標題下方用導言樣式顯示這篇的簡介（Starlight 預設只放在 <meta>）
+import Default from '@astrojs/starlight/components/PageTitle.astro'
+
+const { description } = Astro.locals.starlightRoute.entry.data
+---
+
+<Default />
+{description && <p class="lede">{description}</p>}

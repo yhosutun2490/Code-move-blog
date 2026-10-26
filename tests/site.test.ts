@@ -114,3 +114,22 @@ describe('靜態輸出', () => {
     expect(demoPages).toEqual([])
   })
 })
+
+describe('文章頁導覽', () => {
+  // 側欄 = 標出「目前這頁」的那個導覽區
+  const sidebar = (url: string) =>
+    loadPage(url)
+      .querySelectorAll('nav')
+      .find((nav) => nav.querySelector('a[aria-current="page"]'))
+
+  it.each(published)('$url 的側欄依篇章順序列出整個系列，並標出目前篇章', (article) => {
+    const nav = sidebar(article.url)
+    expect(nav, '找不到側欄').toBeTruthy()
+    const hrefs = nav!
+      .querySelectorAll('a')
+      .map((a) => a.getAttribute('href'))
+      .filter((href) => articles.some((a) => a.url === href))
+    expect(hrefs).toEqual(published.map((a) => a.url))
+    expect(nav!.querySelector('a[aria-current="page"]')!.getAttribute('href')).toBe(article.url)
+  })
+})
