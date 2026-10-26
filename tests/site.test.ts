@@ -1,5 +1,14 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { articles, loadPage, pageExists, published, text, type Article } from './site'
+import {
+  articles,
+  clientScripts,
+  loadPage,
+  pageExists,
+  published,
+  text,
+  type Article,
+} from './site'
 
 describe('文章網址', () => {
   it('找得到文章原稿', () => {
@@ -75,5 +84,15 @@ describe('互動元件', () => {
     // 已上色的 token 會帶著主題顏色，直接放在 island 的 props 裡
     const highlighted = islands(article.url).filter((i) => /#[0-9a-f]{6}/i.test(i.props))
     expect(highlighted).toHaveLength(magicStepsIn(article))
+  })
+})
+
+describe('瀏覽器端', () => {
+  it('不需要下載語法高亮引擎', () => {
+    // Shiki 的語法檔都有 scopeName，底層 vscode-textmate 一定有 tokenizeLine
+    const withShiki = clientScripts().filter((file) =>
+      /scopeName|tokenizeLine/.test(readFileSync(file, 'utf8')),
+    )
+    expect(withShiki).toEqual([])
   })
 })

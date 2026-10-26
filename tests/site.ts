@@ -72,6 +72,18 @@ export function loadPage(url: string): HTMLElement {
   return parse(readFileSync(pagePath(url), 'utf8'))
 }
 
+export function distFiles(dir = DIST): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((d) => {
+    const full = join(dir, d.name)
+    return d.isDirectory() ? distFiles(full) : [full]
+  })
+}
+
+// 讀者瀏覽器可能下載到的所有 JS
+export function clientScripts() {
+  return distFiles().filter((file) => /\.(m?js)$/.test(file))
+}
+
 // 壓掉空白，方便比對讀者看到的文字
 export function text(el: HTMLElement | null | undefined) {
   return (el?.textContent ?? '').replace(/\s+/g, ' ').trim()
