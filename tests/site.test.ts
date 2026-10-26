@@ -1,6 +1,8 @@
 /// <reference types="node" />
 import { existsSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { gunzipSync } from 'node:zlib'
+import type { HTMLElement } from 'node-html-parser'
 import { describe, expect, it } from 'vitest'
 import {
   articles,
@@ -25,6 +27,11 @@ describe('文章網址', () => {
     expect(text(page.querySelector('h1'))).toBe(article.title)
     // 導言要出現在頁面上，不能只在 <meta>
     expect(text(page.querySelector('body'))).toContain(article.description)
+  })
+
+  it('有一篇草稿可以拿來驗證草稿會被隱藏', () => {
+    // 沒有草稿的話，下面所有和草稿有關的測試都會空轉
+    expect(articles.filter((a) => a.draft).map((a) => a.folder)).toContain('00-draft-fixture')
   })
 
   it('草稿沒有頁面', () => {
@@ -182,6 +189,28 @@ describe('文章頁導覽', () => {
   )
 })
 
+describe('草稿', () => {
+  const drafts = articles.filter((a) => a.draft)
+
+  // dist 裡每個檔案的內容；Pagefind 的索引是 gzip，先解開
+  const distContents = () =>
+    distFiles().map((file) => {
+      const raw = readFileSync(file)
+      const body = raw[0] === 0x1f && raw[1] === 0x8b ? gunzipSync(raw) : raw
+      return { file: relative(DIST, file), body: body.toString('utf8') }
+    })
+
+  it.each(drafts)('$url 的標題、網址和內文都不在網站任何地方（頁面、側欄、首頁、搜尋索引）', (draft) => {
+    // 內文裡獨一無二的記號，只可能從這篇草稿來
+    const marker = draft.source.match(/\bdraftmarker\w+/)?.[0]
+    expect(marker, '草稿內文要放一個 draftmarker 記號').toBeTruthy()
+    const leaks = distContents()
+      .filter(({ body }) => [draft.title, draft.url, marker!].some((s) => body.includes(s)))
+      .map(({ file }) => file)
+    expect(leaks).toEqual([])
+  })
+})
+
 describe('語言', () => {
   it.each(['/', ...published.map((a) => a.url)])('%s 的頁面語言是繁體中文', (url) => {
     expect(loadPage(url).querySelector('html')!.getAttribute('lang')).toMatch(/^zh-(TW|Hant)/)
@@ -204,5 +233,45 @@ describe('語言', () => {
     const english = /Skip to content|On this page|Overview|Section titled|Select theme|\bPrevious\b|\bNext\b|\bSearch\b|\bMenu\b/
     expect(ui).not.toMatch(english)
     expect(ui).not.toMatch(/\b(skipLink|search|tableOfContents|themeSelect|page|heading|menuButton|sidebarNav)\.[a-zA-Z]+/)
+  })
+})
+
+describe('系列辨識', () => {
+  // 標題前後緊鄰的元素：上方是系列位置，下方是導言
+  const besideTitle = (url: string) => {
+    const h1 = loadPage(url).querySelector('h1')!
+    const siblings = h1.parentNode.childNodes.filter((n) => n.nodeType === 1)
+    const i = siblings.indexOf(h1)
+    return { before: siblings[i - 1], after: siblings[i + 1] } as {
+      before?: HTMLElement
+      after?: HTMLElement
+    }
+  }
+
+  it.each(published)('$url 標題上方寫著這是系列的第幾篇、共幾篇', (article) => {
+    expect(text(besideTitle(article.url).before)).toBe(
+      `MobX 拆解 · 第 ${article.order} 篇 / 共 ${published.length} 篇`,
+    )
+  })
+
+  it.each(published)('$url 標題正下方是這篇的導言', (article) => {
+    expect(text(besideTitle(article.url).after)).toBe(article.description)
+  })
+
+  it.each(published)('$url 頁首有 mobx/motion 字標，點了回首頁', (article) => {
+    const mark = loadPage(article.url)
+      .querySelectorAll('header a')
+      .find((a) => text(a) === 'mobx/motion')
+    expect(mark, '找不到字標').toBeTruthy()
+    expect(mark!.getAttribute('href')).toBe('/')
+    // 斜線要單獨包起來才能上 MobX 橘
+    expect(mark!.querySelectorAll('*').some((el) => text(el) === '/')).toBe(true)
+  })
+
+  it.each(published)('$url 頁尾寫著用什麼打造', (article) => {
+    // 頁尾 = 主內容區最後讀到的文字（排在上一篇 / 下一篇之後）
+    const main = loadPage(article.url).querySelector('main')!
+    main.querySelectorAll('script, style, template').forEach((el) => el.remove())
+    expect(text(main)).toMatch(/用 Astro、shiki-magic-move 與 MobX 打造$/)
   })
 })
