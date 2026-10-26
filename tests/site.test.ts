@@ -132,4 +132,30 @@ describe('文章頁導覽', () => {
     expect(hrefs).toEqual(published.map((a) => a.url))
     expect(nav!.querySelector('a[aria-current="page"]')!.getAttribute('href')).toBe(article.url)
   })
+
+  // 原稿裡的 ## 小標
+  const headingsIn = (article: Article) =>
+    [...article.source.matchAll(/^## (.+)$/gm)].map((m) => m[1].trim())
+
+  it.each(published)('$url 有本頁目錄，列出文章的每個小標', (article) => {
+    const tocs = loadPage(article.url)
+      .querySelectorAll('nav')
+      .filter((nav) => nav.querySelector('a[href^="#"]'))
+    expect(tocs.length, '找不到本頁目錄').toBeGreaterThan(0)
+    for (const toc of tocs) {
+      const items = toc.querySelectorAll('a[href^="#"]').map((a) => text(a))
+      expect(items).toEqual(expect.arrayContaining(headingsIn(article)))
+    }
+  })
+
+  it.each(published)('$url 有全站搜尋', (article) => {
+    expect(loadPage(article.url).querySelector('button[aria-label="搜尋"]')).toBeTruthy()
+  })
+
+  it('搜尋索引收錄每一篇文章，而且只有文章', () => {
+    const entry = JSON.parse(readFileSync(join(DIST, 'pagefind/pagefind-entry.json'), 'utf8'))
+    const indexed = Object.values(entry.languages as Record<string, { page_count: number }>)
+      .reduce((sum, lang) => sum + lang.page_count, 0)
+    expect(indexed).toBe(published.length)
+  })
 })
