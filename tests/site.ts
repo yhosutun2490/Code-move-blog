@@ -8,6 +8,7 @@
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { gunzipSync } from 'node:zlib'
 import { parse as parseHtml, type HTMLElement } from 'node-html-parser'
 import { parse as parseYaml } from 'yaml'
 
@@ -170,4 +171,75 @@ export function distFiles(dir = DIST, prefix = ''): string[] {
     else out.push(rel)
   }
   return out
+}
+
+/** 文章原始碼裡的 ## 小節標題（略過程式碼區塊） */
+export function sectionHeadings(post: Pick<Post, 'body'>): string[] {
+  const prose = post.body.replace(/^```[\s\S]*?^```/gm, '')
+  return [...prose.matchAll(/^##\s+(.+?)\s*$/gm)].map((m) => m[1])
+}
+
+export interface Toc {
+  /** 目錄標題（例如「本頁內容」） */
+  label: string
+  links: { href: string; text: string }[]
+}
+
+/**
+ * 本頁目錄：以標題命名（aria-labelledby）、而且只連到本頁錨點的導覽區塊。
+ * 同一份目錄在寬螢幕和手機各有一份，回傳第一份。
+ */
+export function tocOf(page: HTMLElement): Toc | undefined {
+  for (const nav of page.querySelectorAll('nav[aria-labelledby]')) {
+    const links = nav
+      .querySelectorAll('a[href]')
+      .map((a) => ({ href: a.getAttribute('href')!, text: textOf(a) }))
+    if (links.length === 0 || !links.every((l) => l.href.startsWith('#'))) continue
+    const labelEl = page.getElementById(nav.getAttribute('aria-labelledby')!)
+    return { label: labelEl ? textOf(labelEl) : '', links }
+  }
+  return undefined
+}
+
+export interface SearchRecord {
+  url: string
+  title: string
+  content: string
+}
+
+/** build 時產生的全站搜尋索引（Pagefind），每頁一筆 */
+export function searchIndex(): SearchRecord[] {
+  const dir = join(DIST, 'pagefind/fragment')
+  if (!existsSync(dir)) return []
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('.pf_fragment'))
+    .map((f) => {
+      const raw = gunzipSync(readFileSync(join(dir, f))).toString('utf8')
+      const data = JSON.parse(raw.slice(raw.indexOf('{')))
+      // Pagefind 會在中文詞之間插入零寬空白
+      const clean = (s: string) => s.replace(/​/g, '')
+      return { url: data.url, title: clean(data.meta?.title ?? ''), content: clean(data.content) }
+    })
+}
+
+export interface NavLink {
+  href: string
+  text: string
+  /** aria-current="page"：讀者目前所在的頁面 */
+  current: boolean
+}
+
+/**
+ * 側欄：標出「目前所在頁面」（aria-current="page"）的那個導覽區塊，
+ * 回傳其中所有連結，依畫面上的順序。找不到時回傳 undefined。
+ */
+export function sidebarOf(page: HTMLElement): NavLink[] | undefined {
+  const nav = page
+    .querySelectorAll('nav')
+    .find((n) => n.querySelector('a[aria-current="page"]'))
+  return nav?.querySelectorAll('a[href]').map((a) => ({
+    href: a.getAttribute('href')!,
+    text: textOf(a),
+    current: a.getAttribute('aria-current') === 'page',
+  }))
 }

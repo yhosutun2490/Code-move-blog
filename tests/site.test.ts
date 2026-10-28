@@ -8,7 +8,11 @@ import {
   pageExists,
   postUrl,
   publishedPosts,
+  searchIndex,
+  sectionHeadings,
+  sidebarOf,
   textOf,
+  tocOf,
 } from './site'
 
 const posts = publishedPosts()
@@ -58,6 +62,16 @@ describe('純靜態輸出', () => {
   it('demos 資料夾裡的程式檔不會變成頁面', () => {
     const demoPages = files.filter((f) => /^mobx\/[^/]+\/demos\//.test(f))
     expect(demoPages).toEqual([])
+  })
+
+  it('只產生首頁、文章頁與 404 頁，沒有多出來的頁面', () => {
+    const htmlPages = files.filter((f) => f.endsWith('.html')).sort()
+    const expected = [
+      '404.html',
+      'index.html',
+      ...posts.map((p) => `mobx/${p.folder}/index.html`),
+    ].sort()
+    expect(htmlPages).toEqual(expected)
   })
 })
 
@@ -150,6 +164,125 @@ describe('程式碼動畫與互動 demo', () => {
         for (const sig of SHIKI_SIGNATURES) {
           expect(code.includes(sig), `${path} 含有 ${sig}`).toBe(false)
         }
+      }
+    },
+  )
+})
+
+describe('文章頁側欄', () => {
+  it.each(posts.map((p) => [postUrl(p), p] as const))(
+    '%s 的側欄依篇章順序列出所有篇章，並標出目前篇章',
+    (url, post) => {
+      const sidebar = sidebarOf(loadPage(url))
+      expect(sidebar, `${url} 沒有標出目前篇章的側欄`).toBeDefined()
+      const entries = sidebar!.filter((l) => l.href.startsWith('/mobx/'))
+      expect(entries.map((l) => l.href)).toEqual(posts.map(postUrl))
+      expect(entries.map((l) => l.text)).toEqual(posts.map((p) => p.title))
+      expect(entries.filter((l) => l.current).map((l) => l.href)).toEqual([postUrl(post)])
+    },
+  )
+})
+
+describe('本頁目錄', () => {
+  it('至少有一篇有小節標題（避免測試空轉）', () => {
+    expect(posts.some((p) => sectionHeadings(p).length > 0)).toBe(true)
+  })
+
+  it.each(posts.map((p) => [postUrl(p), p] as const))(
+    '%s 的本頁目錄列出每個小節，並連到該小節',
+    (url, post) => {
+      const page = loadPage(url)
+      const toc = tocOf(page)
+      expect(toc, `${url} 沒有本頁目錄`).toBeDefined()
+      for (const heading of sectionHeadings(post)) {
+        const link = toc!.links.find((l) => l.text === heading)
+        expect(link, `目錄缺少「${heading}」`).toBeDefined()
+        const target = page.getElementById(decodeURIComponent(link!.href.slice(1)))
+        expect(target && textOf(target), `「${heading}」的錨點對不到標題`).toBe(heading)
+      }
+    },
+  )
+})
+
+describe('全站搜尋', () => {
+  it.each(posts.map((p) => [postUrl(p), p] as const))('%s 有搜尋入口', (url) => {
+    expect(loadPage(url).querySelector('site-search')).not.toBeNull()
+  })
+
+  it.each(posts.map((p) => [postUrl(p), p] as const))(
+    '%s 的標題和內文都收進搜尋索引',
+    (url, post) => {
+      const record = searchIndex().find((r) => r.url === url)
+      expect(record, `${url} 不在搜尋索引`).toBeDefined()
+      expect(record!.title).toBe(post.title)
+      for (const heading of sectionHeadings(post)) {
+        expect(record!.content).toContain(heading)
+      }
+    },
+  )
+})
+
+describe('繁體中文介面', () => {
+  const pages = ['/', ...posts.map(postUrl), '/404.html']
+  const CJK = /[㐀-鿿]/
+
+  it.each(pages)('%s 的頁面語言是繁體中文', (url) => {
+    expect(loadPage(url).querySelector('html')?.getAttribute('lang')).toBe('zh-Hant-TW')
+  })
+
+  // 翻譯缺漏時 Starlight 會直接輸出字串的 key，例如 search.label、page.nextLink
+  const UI_KEY =
+    /\b(?:skipLink|search|themeSelect|languageSelect|menuButton|sidebarNav|tableOfContents|page|404|i18n|aside|expressiveCode|fileTree|builtWithStarlight|heading)\.[a-zA-Z]+/
+
+  it.each(pages)('%s 沒有未翻譯的介面字串', (url) => {
+    const page = loadPage(url)
+    for (const el of page.querySelectorAll('script, style')) el.remove()
+    expect(page.toString().match(UI_KEY)?.[0]).toBeUndefined()
+  })
+
+  it.each(pages)('%s 的無障礙標籤都是中文', (url) => {
+    const labels = loadPage(url)
+      .querySelectorAll('[aria-label]')
+      .map((el) => el.getAttribute('aria-label')!)
+    expect(labels.length).toBeGreaterThan(0)
+    expect(labels.filter((l) => !CJK.test(l))).toEqual([])
+  })
+
+  it.each(posts.map(postUrl))('%s 的搜尋、本頁目錄、主題切換是中文', (url) => {
+    const page = loadPage(url)
+    const search = page.querySelector('site-search button')
+    expect(search?.getAttribute('aria-label')).toBe('搜尋')
+    expect(tocOf(page)?.label).toBe('本頁內容')
+    const themes = page.querySelectorAll('starlight-theme-select option').map(textOf)
+    expect(themes).toEqual(expect.arrayContaining(['深色', '淺色', '自動']))
+  })
+})
+
+describe('上一篇 / 下一篇', () => {
+  const links = (url: string, rel: 'prev' | 'next') =>
+    loadPage(url)
+      .querySelectorAll(`a[rel="${rel}"]`)
+      .map((a) => ({ href: a.getAttribute('href'), text: textOf(a) }))
+
+  it('第一篇沒有上一篇，最後一篇沒有下一篇', () => {
+    expect(links(postUrl(posts[0]), 'prev')).toEqual([])
+    expect(links(postUrl(posts.at(-1)!), 'next')).toEqual([])
+  })
+
+  it.each(posts.map((p, i) => [postUrl(p), i] as const))(
+    '%s 依篇章順序連到前後篇',
+    (url, i) => {
+      for (const [rel, neighbour] of [
+        ['prev', posts[i - 1]],
+        ['next', posts[i + 1]],
+      ] as const) {
+        const found = links(url, rel)
+        if (!neighbour) {
+          expect(found, `${url} 不該有 ${rel}`).toEqual([])
+          continue
+        }
+        expect(found.map((l) => l.href)).toEqual([postUrl(neighbour)])
+        expect(found[0].text).toContain(neighbour.title)
       }
     },
   )
