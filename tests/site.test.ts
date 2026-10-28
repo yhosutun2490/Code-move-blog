@@ -8,8 +8,11 @@ import {
   pageExists,
   postUrl,
   publishedPosts,
+  searchIndex,
+  sectionHeadings,
   sidebarOf,
   textOf,
+  tocOf,
 } from './site'
 
 const posts = publishedPosts()
@@ -166,6 +169,75 @@ describe('文章頁側欄', () => {
       expect(entries.map((l) => l.href)).toEqual(posts.map(postUrl))
       expect(entries.map((l) => l.text)).toEqual(posts.map((p) => p.title))
       expect(entries.filter((l) => l.current).map((l) => l.href)).toEqual([postUrl(post)])
+    },
+  )
+})
+
+describe('本頁目錄', () => {
+  it('至少有一篇有小節標題（避免測試空轉）', () => {
+    expect(posts.some((p) => sectionHeadings(p).length > 0)).toBe(true)
+  })
+
+  it.each(posts.map((p) => [postUrl(p), p] as const))(
+    '%s 的本頁目錄列出每個小節，並連到該小節',
+    (url, post) => {
+      const page = loadPage(url)
+      const toc = tocOf(page)
+      expect(toc, `${url} 沒有本頁目錄`).toBeDefined()
+      for (const heading of sectionHeadings(post)) {
+        const link = toc!.links.find((l) => l.text === heading)
+        expect(link, `目錄缺少「${heading}」`).toBeDefined()
+        const target = page.getElementById(decodeURIComponent(link!.href.slice(1)))
+        expect(target && textOf(target), `「${heading}」的錨點對不到標題`).toBe(heading)
+      }
+    },
+  )
+})
+
+describe('全站搜尋', () => {
+  it.each(posts.map((p) => [postUrl(p), p] as const))('%s 有搜尋入口', (url) => {
+    expect(loadPage(url).querySelector('site-search')).not.toBeNull()
+  })
+
+  it.each(posts.map((p) => [postUrl(p), p] as const))(
+    '%s 的標題和內文都收進搜尋索引',
+    (url, post) => {
+      const record = searchIndex().find((r) => r.url === url)
+      expect(record, `${url} 不在搜尋索引`).toBeDefined()
+      expect(record!.title).toBe(post.title)
+      for (const heading of sectionHeadings(post)) {
+        expect(record!.content).toContain(heading)
+      }
+    },
+  )
+})
+
+describe('上一篇 / 下一篇', () => {
+  const links = (url: string, rel: 'prev' | 'next') =>
+    loadPage(url)
+      .querySelectorAll(`a[rel="${rel}"]`)
+      .map((a) => ({ href: a.getAttribute('href'), text: textOf(a) }))
+
+  it('第一篇沒有上一篇，最後一篇沒有下一篇', () => {
+    expect(links(postUrl(posts[0]), 'prev')).toEqual([])
+    expect(links(postUrl(posts.at(-1)!), 'next')).toEqual([])
+  })
+
+  it.each(posts.map((p, i) => [postUrl(p), i] as const))(
+    '%s 依篇章順序連到前後篇',
+    (url, i) => {
+      for (const [rel, neighbour] of [
+        ['prev', posts[i - 1]],
+        ['next', posts[i + 1]],
+      ] as const) {
+        const found = links(url, rel)
+        if (!neighbour) {
+          expect(found, `${url} 不該有 ${rel}`).toEqual([])
+          continue
+        }
+        expect(found.map((l) => l.href)).toEqual([postUrl(neighbour)])
+        expect(found[0].text).toContain(neighbour.title)
+      }
     },
   )
 })
