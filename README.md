@@ -11,6 +11,7 @@ npm install
 npm run dev        # http://localhost:4321
 npm run build      # 靜態輸出到 dist/
 npm run preview    # 預覽 build 結果
+npm test           # build 後檢查 dist/ 的頁面（網址、首頁列表、island、無 Shiki、純靜態）
 ```
 
 需要 Node 22 以上。
