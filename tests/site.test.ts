@@ -315,6 +315,54 @@ describe('繁體中文介面', () => {
   })
 })
 
+describe('草稿在全站隱藏', () => {
+  const drafts = allPosts().filter((p) => p.draft)
+  const htmlPages = distFiles().filter((f) => f.endsWith('.html'))
+
+  it('至少有一篇草稿（避免測試空轉）', () => {
+    expect(drafts.length).toBeGreaterThan(0)
+  })
+
+  it.each(drafts.map((p) => [postUrl(p), p] as const))(
+    '%s 沒有頁面，任何頁面（側欄、首頁、上下篇）都不連到它',
+    (url) => {
+      expect(pageExists(url)).toBe(false)
+      for (const file of htmlPages) {
+        const page = loadPage(`/${file}`)
+        const linked = page
+          .querySelectorAll('a[href]')
+          .some((a) => a.getAttribute('href')!.split(/[?#]/)[0] === url)
+        expect(linked, `${file} 連到草稿 ${url}`).toBe(false)
+      }
+    },
+  )
+
+  it.each(drafts.map((p) => [postUrl(p), p] as const))(
+    '%s 的標題不出現在任何頁面上',
+    (_url, draft) => {
+      for (const file of htmlPages) {
+        expect(textOf(loadPage(`/${file}`)), file).not.toContain(draft.title)
+      }
+    },
+  )
+
+  it.each(drafts.map((p) => [postUrl(p), p] as const))(
+    '%s 不在搜尋索引裡',
+    (url, draft) => {
+      const index = searchIndex()
+      expect(index.length, '搜尋索引是空的').toBeGreaterThan(0)
+      expect(index.map((r) => r.url)).not.toContain(url)
+      for (const record of index) {
+        expect(record.title).not.toBe(draft.title)
+        expect(record.content, record.url).not.toContain(draft.description)
+        for (const heading of sectionHeadings(draft)) {
+          expect(record.content, record.url).not.toContain(heading)
+        }
+      }
+    },
+  )
+})
+
 describe('上一篇 / 下一篇', () => {
   const links = (url: string, rel: 'prev' | 'next') =>
     loadPage(url)
