@@ -10,7 +10,7 @@
   font-size: 0.78rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text); /* 小字：用對比足夠的橘 */
   margin: 0 0 0.75rem;
 }
 
@@ -18,6 +18,11 @@
   color: var(--ink-soft);
   font-size: 1.1rem;
   margin: 0;
+}
+
+/* 文章頁：標題（PageTitle 的 h1#_top）下方的導言 */
+#_top + .lede {
+  margin-top: 1rem;
 }
 
 /* ---------- home ---------- */
