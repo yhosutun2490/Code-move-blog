@@ -106,9 +106,22 @@ export function codeBlockStylesheet(): string {
   return found[0][1]
 }
 
-/** 某個 CSS 自訂屬性在一段 CSS 裡出現過的所有值 */
+/**
+ * 全站 CSS 裡 `selector { prop: … }` 的值（selector 要完全相同）。
+ * 只用來讀程式碼動畫的外框與字體，作為一般程式碼區塊的預期值。
+ */
+export function ruleValue(selector: string, prop: string): string {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+')
+  const re = new RegExp(`(?:^|[},])\\s*${escaped}\\s*\\{([^}]*)\\}`, 'g')
+  const allCss = [...stylesheets().values()].join('\n')
+  const values = [...allCss.matchAll(re)].flatMap((m) => declaredValues(m[1], prop))
+  if (values.length === 0) throw new Error(`CSS 裡找不到 ${selector} { ${prop} }`)
+  return values.at(-1)!
+}
+
+/** 某個 CSS 屬性在一段 CSS 裡出現過的所有值 */
 export function declaredValues(css: string, prop: string): string[] {
-  const re = new RegExp(`${prop.replace(/[-]/g, '\\-')}\\s*:\\s*([^;}]+)`, 'g')
+  const re = new RegExp(`(?<![\\w-])${prop.replace(/[-]/g, '\\-')}\\s*:\\s*([^;}]+)`, 'g')
   return [...css.matchAll(re)].map((m) => m[1].trim())
 }
 

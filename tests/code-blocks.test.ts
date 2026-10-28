@@ -7,6 +7,7 @@ import {
   magicStepsOf,
   renderCodeBlock,
   resolveCssValue,
+  ruleValue,
 } from './code-blocks'
 import { loadPage, postUrl, publishedPosts, textOf } from './site'
 
@@ -35,6 +36,48 @@ describe('一般程式碼區塊', () => {
       ['mark', 'ins', 'del'].filter((c) => l.classList.contains(c)),
     )
     expect(marks).toEqual([[], ['del'], ['ins'], ['mark']])
+  })
+})
+
+describe('程式碼動畫不受文章排版樣式影響', () => {
+  // Starlight 的文章樣式全部寫成 :not(:where(.not-content *))，
+  // 放在 .not-content 裡的元素就不會被套到 ol / p / pre / button 的間距和字型
+  it.each(withMagicSteps.map((p) => [postUrl(p)] as const))(
+    '%s 的每個程式碼動畫都在 not-content 區塊裡',
+    (url) => {
+      const islands = loadPage(url)
+        .querySelectorAll('astro-island')
+        .filter((el) => /"tokens"/.test(el.getAttribute('props') ?? ''))
+      expect(islands.length).toBeGreaterThan(0)
+      for (const island of islands) {
+        expect(island.closest('.not-content'), `${url} 的程式碼動畫沒有包在 not-content 裡`).not.toBeNull()
+      }
+    },
+  )
+})
+
+describe('一般程式碼區塊融入紙張風格（和程式碼動畫同一套外框與字體）', () => {
+  // 預期值來自 build 出來的程式碼動畫樣式；兩邊都解析到實際值再比
+  const resolved = (value: string) => new Set(resolveCssValue(value))
+  const ecValue = (prop: string) => {
+    const values = declaredValues(codeBlockStylesheet(), prop)
+    expect(values.length, `程式碼區塊樣式沒有 ${prop}`).toBeGreaterThan(0)
+    return new Set(values.flatMap((v) => resolveCssValue(v)))
+  }
+
+  it('圓角相同', () => {
+    expect(ecValue('--ec-brdRad')).toEqual(resolved(ruleValue('.stepper', 'border-radius')))
+  })
+
+  it('外框顏色相同', () => {
+    const border = ruleValue('.stepper', 'border')
+    const color = border.match(/var\([^)]*\)|#[0-9a-fA-F]+$/)![0]
+    expect(ecValue('--ec-brdCol')).toEqual(resolved(color))
+  })
+
+  it('等寬字體相同', () => {
+    const font = ruleValue('.stepper-code .shiki-magic-move-container', 'font-family')
+    expect(ecValue('--ec-codeFontFml')).toEqual(resolved(font))
   })
 })
 
