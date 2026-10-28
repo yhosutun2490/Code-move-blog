@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   allPosts,
   clientScriptsOf,
+  distFiles,
   islandsOf,
   loadPage,
   pageExists,
@@ -30,6 +31,33 @@ describe('文章網址', () => {
     for (const draft of allPosts().filter((p) => p.draft)) {
       expect(pageExists(postUrl(draft)), postUrl(draft)).toBe(false)
     }
+  })
+})
+
+describe('純靜態輸出', () => {
+  const files = distFiles()
+
+  it('首頁與每篇文章都是現成的 HTML 檔', () => {
+    expect(files).toContain('index.html')
+    for (const post of posts) {
+      expect(files).toContain(`mobx/${post.folder}/index.html`)
+    }
+  })
+
+  it('沒有伺服器端程式', () => {
+    const serverFiles = files.filter(
+      (f) =>
+        /\.(mjs|cjs)$/.test(f) ||
+        f.startsWith('server/') ||
+        f.startsWith('_worker.js') ||
+        f === '_routes.json',
+    )
+    expect(serverFiles).toEqual([])
+  })
+
+  it('demos 資料夾裡的程式檔不會變成頁面', () => {
+    const demoPages = files.filter((f) => /^mobx\/[^/]+\/demos\//.test(f))
+    expect(demoPages).toEqual([])
   })
 })
 
