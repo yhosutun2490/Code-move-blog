@@ -243,3 +243,69 @@ export function sidebarOf(page: HTMLElement): NavLink[] | undefined {
     current: a.getAttribute('aria-current') === 'page',
   }))
 }
+
+/** 頁面引用的所有外部資源網址（<link href>、<script src>、<img src> 等），原樣回傳 */
+export function resourceUrlsOf(page: HTMLElement): string[] {
+  const urls: string[] = []
+  for (const el of page.querySelectorAll('link[href]')) urls.push(el.getAttribute('href')!)
+  for (const el of page.querySelectorAll('[src]')) urls.push(el.getAttribute('src')!)
+  return urls
+}
+
+/** 是否指向別的網站（含 //cdn.example 這種省略 scheme 的寫法） */
+export function isCrossOrigin(url: string): boolean {
+  return new URL(url, 'http://site.test').origin !== 'http://site.test'
+}
+
+/**
+ * 讀者打開 pageUrl 時會載入的 CSS（網址 → 內容）：
+ * 同站的 <link rel="stylesheet">、inline <style>，以及它們 @import 的同站檔案。
+ * 站外的樣式表不讀，只列在網址裡（內容為空字串）。
+ */
+export function stylesheetsOf(pageUrl: string): Map<string, string> {
+  const page = loadPage(pageUrl)
+  const base = new URL(pageUrl, 'http://site.test')
+  const out = new Map<string, string>()
+  const visit = (href: string, from: URL) => {
+    const url = new URL(href, from)
+    const key = url.origin === base.origin ? url.pathname : url.href
+    if (out.has(key)) return
+    if (url.origin !== base.origin) {
+      out.set(key, '')
+      return
+    }
+    const css = readFileSync(distFileFor(url.pathname), 'utf8')
+    out.set(key, css)
+    for (const m of css.matchAll(/@import\s+(?:url\()?\s*["']?([^"')\s;]+)/g)) visit(m[1], url)
+  }
+  for (const link of page.querySelectorAll('link[rel~="stylesheet"][href]')) {
+    visit(link.getAttribute('href')!, base)
+  }
+  page.querySelectorAll('style').forEach((style, i) => {
+    out.set(`${pageUrl}#style-${i}`, style.textContent)
+  })
+  return out
+}
+
+export interface FontFace {
+  family: string
+  weight: string
+  /** 字型檔網址（已依 CSS 檔位置解析成絕對網址） */
+  src: string[]
+}
+
+/** CSS 裡宣告的 @font-face */
+export function fontFacesIn(css: string, cssUrl: string): FontFace[] {
+  const base = new URL(cssUrl, 'http://site.test')
+  return [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)].map(([, body]) => {
+    const prop = (name: string) =>
+      body.match(new RegExp(`(?:^|;|\\s)${name}\\s*:\\s*([^;]+)`))?.[1].trim() ?? ''
+    return {
+      family: prop('font-family').replace(/^["']|["']$/g, ''),
+      weight: prop('font-weight'),
+      src: [...prop('src').matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g)].map(
+        (m) => new URL(m[1], base).href,
+      ),
+    }
+  })
+}
