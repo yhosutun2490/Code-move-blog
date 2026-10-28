@@ -171,3 +171,25 @@ export function distFiles(dir = DIST, prefix = ''): string[] {
   }
   return out
 }
+
+export interface NavLink {
+  href: string
+  text: string
+  /** aria-current="page"：讀者目前所在的頁面 */
+  current: boolean
+}
+
+/**
+ * 側欄：標出「目前所在頁面」（aria-current="page"）的那個導覽區塊，
+ * 回傳其中所有連結，依畫面上的順序。找不到時回傳 undefined。
+ */
+export function sidebarOf(page: HTMLElement): NavLink[] | undefined {
+  const nav = page
+    .querySelectorAll('nav')
+    .find((n) => n.querySelector('a[aria-current="page"]'))
+  return nav?.querySelectorAll('a[href]').map((a) => ({
+    href: a.getAttribute('href')!,
+    text: textOf(a),
+    current: a.getAttribute('aria-current') === 'page',
+  }))
+}

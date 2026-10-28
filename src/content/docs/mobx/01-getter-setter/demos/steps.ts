@@ -4,7 +4,7 @@ import defineProperty from './steps/02-define-property.js?raw'
 import subscribers from './steps/03-subscribers.js?raw'
 import autorun from './steps/04-autorun.js?raw'
 import usage from './steps/05-usage.js?raw'
-import type { Step } from '../../../../lib/types'
+import type { Step } from '../../../../../lib/types'
 
 export const steps: Step[] = [
   {

@@ -4,7 +4,7 @@ description: MobX 的魔法拆開來，其實就是「攔截讀寫」加上「�
 order: 1
 ---
 
-import MagicSteps from '../../../components/MagicSteps.astro'
+import MagicSteps from '../../../../components/MagicSteps.astro'
 import { steps } from './demos/steps'
 import MiniReactiveDemo from './demos/MiniReactiveDemo'
 import MobxCartDemo from './demos/MobxCartDemo'
@@ -30,7 +30,7 @@ import MobxCartDemo from './demos/MobxCartDemo'
 
 下面這個 demo 跑的就是上面步驟 5 的程式碼，只是多印了 log。試著按「改 note」，看看和按「qty + 1」有什麼不同。
 
-<MiniReactiveDemo client:visible />
+<div class="not-content"><MiniReactiveDemo client:visible /></div>
 
 你會發現：
 
@@ -43,7 +43,7 @@ import MobxCartDemo from './demos/MobxCartDemo'
 
 同一個購物車，換成 MobX。欄位用 `makeAutoObservable` 變成 observable，`get total()` 自動變成 computed，`observer` 包住的元件就是一個特殊的 autorun。
 
-<MobxCartDemo client:visible />
+<div class="not-content"><MobxCartDemo client:visible /></div>
 
 右下角的 `render ×` 是元件的渲染次數。改 `note` 時，只有 `NoteView` 會重新渲染，`TotalView` 動都不動。原理跟手寫版完全一樣：`TotalView` 在 render 時從來沒讀過 `note`。
 

@@ -11,6 +11,7 @@
   "dependencies": {
     "@astrojs/mdx": "^8.1.1",
     "@astrojs/react": "^7.1.1",
+    "@astrojs/starlight": "^0.42.7",
     "astro": "^7.4.2",
     "mobx": "^7.1.1",
     "mobx-react-lite": "^5.1.0",

@@ -8,6 +8,7 @@ import {
   pageExists,
   postUrl,
   publishedPosts,
+  sidebarOf,
   textOf,
 } from './site'
 
@@ -151,6 +152,20 @@ describe('程式碼動畫與互動 demo', () => {
           expect(code.includes(sig), `${path} 含有 ${sig}`).toBe(false)
         }
       }
+    },
+  )
+})
+
+describe('文章頁側欄', () => {
+  it.each(posts.map((p) => [postUrl(p), p] as const))(
+    '%s 的側欄依篇章順序列出所有篇章，並標出目前篇章',
+    (url, post) => {
+      const sidebar = sidebarOf(loadPage(url))
+      expect(sidebar, `${url} 沒有標出目前篇章的側欄`).toBeDefined()
+      const entries = sidebar!.filter((l) => l.href.startsWith('/mobx/'))
+      expect(entries.map((l) => l.href)).toEqual(posts.map(postUrl))
+      expect(entries.map((l) => l.text)).toEqual(posts.map((p) => p.title))
+      expect(entries.filter((l) => l.current).map((l) => l.href)).toEqual([postUrl(post)])
     },
   )
 })
