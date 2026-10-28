@@ -19,6 +19,11 @@ export default defineConfig({
       // 暫時沿用原本的全域樣式（stepper、demo、首頁）；主題 token 會在之後整理
       customCss: ['./src/styles/global.css'],
       routeMiddleware: './src/routeData.ts',
+      components: {
+        PageTitle: './src/components/starlight/PageTitle.astro',
+        SiteTitle: './src/components/starlight/SiteTitle.astro',
+        Footer: './src/components/starlight/Footer.astro',
+      },
     }),
     react(),
   ],

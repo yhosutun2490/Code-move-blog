@@ -169,6 +169,63 @@ describe('程式碼動畫與互動 demo', () => {
   )
 })
 
+describe('系列辨識元素', () => {
+  const titleOf = (url: string) => loadPage(url).querySelector('h1')!
+
+  it.each(posts.map((p) => [postUrl(p), p] as const))(
+    '%s 的標題上方寫著「第 N 篇 / 共 M 篇」',
+    (url, post) => {
+      const above = titleOf(url).previousElementSibling
+      expect(above && textOf(above)).toBe(
+        `MobX 拆解 · 第 ${post.order} 篇 / 共 ${posts.length} 篇`,
+      )
+    },
+  )
+
+  it.each(posts.map((p) => [postUrl(p), p] as const))(
+    '%s 的標題下方以導言樣式顯示簡介',
+    (url, post) => {
+      const below = titleOf(url).nextElementSibling
+      expect(below && textOf(below)).toBe(post.description)
+      expect(below?.classList.contains('lede')).toBe(true)
+    },
+  )
+
+  it.each(['/', ...posts.map(postUrl), '/404.html'])(
+    '%s 的頁首有 mobx/motion 字標，斜線單獨上色，連到首頁',
+    (url) => {
+      const mark = loadPage(url)
+        .querySelectorAll('header a[href="/"]')
+        .find((a) => textOf(a) === 'mobx/motion')
+      expect(mark, `${url} 頁首沒有連到首頁的字標`).toBeDefined()
+      // 斜線包在自己的元素裡，才能用 MobX 橘上色
+      expect(mark!.querySelectorAll('*').map(textOf)).toContain('/')
+    },
+  )
+
+  it.each(['/', ...posts.map(postUrl), '/404.html'])(
+    '%s 的頁尾寫著打造說明，在內文之後',
+    (url) => {
+      const page = loadPage(url)
+      const credit = page
+        .querySelectorAll('main p')
+        .find((p) => textOf(p) === '用 Astro、shiki-magic-move 與 MobX 打造')
+      expect(credit, `${url} 沒有打造說明`).toBeDefined()
+      // 在頁面最下方：內文（以及上一篇 / 下一篇）都在它之前
+      const html = page.toString()
+      const creditAt = html.indexOf(credit!.toString())
+      expect(html.indexOf('<h1')).toBeLessThan(creditAt)
+      for (const a of page.querySelectorAll('a[rel="prev"], a[rel="next"]')) {
+        expect(html.indexOf(a.toString())).toBeLessThan(creditAt)
+      }
+    },
+  )
+
+  it('首頁沒有「第 N 篇」', () => {
+    expect(textOf(loadPage('/'))).not.toMatch(/第\s*\d+\s*篇/)
+  })
+})
+
 describe('文章頁側欄', () => {
   it.each(posts.map((p) => [postUrl(p), p] as const))(
     '%s 的側欄依篇章順序列出所有篇章，並標出目前篇章',
