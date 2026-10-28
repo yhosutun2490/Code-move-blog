@@ -17,8 +17,9 @@ export default defineConfig({
       locales: { root: { label: '繁體中文', lang: 'zh-Hant-TW' } },
       // 側欄順序來自每篇 frontmatter 的 order（見 content.config.ts）
       sidebar: [{ label: 'MobX 拆解', items: [{ autogenerate: { directory: 'mobx' } }] }],
-      // 暫時沿用原本的全域樣式（stepper、demo、首頁）；主題 token 會在之後整理
-      customCss: ['./src/styles/global.css'],
+      // theme.css：字體、顏色、版心寬度的唯一來源（含 Starlight 深淺色對應）
+      // global.css：網站自己的元件樣式（eyebrow / lede、首頁、stepper、demo），只用 theme.css 的 token
+      customCss: ['./src/styles/theme.css', './src/styles/global.css'],
       routeMiddleware: './src/routeData.ts',
       components: {
         PageTitle: './src/components/starlight/PageTitle.astro',

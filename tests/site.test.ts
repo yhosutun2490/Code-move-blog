@@ -1,16 +1,22 @@
+import { existsSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   allPosts,
   clientScriptsOf,
+  distFileFor,
   distFiles,
+  fontFacesIn,
+  isCrossOrigin,
   islandsOf,
   loadPage,
   pageExists,
   postUrl,
   publishedPosts,
+  resourceUrlsOf,
   searchIndex,
   sectionHeadings,
   sidebarOf,
+  stylesheetsOf,
   textOf,
   tocOf,
 } from './site'
@@ -391,4 +397,90 @@ describe('上一篇 / 下一篇', () => {
       }
     },
   )
+})
+
+describe('深淺色主題', () => {
+  const pages = ['/', ...posts.map(postUrl), '/404.html']
+
+  // 窄螢幕的選單裡還有一份，每一份都要是這三個選項
+  it.each(pages)('%s 的主題切換有深色、淺色、跟隨系統三個選項', (url) => {
+    const selects = loadPage(url).querySelectorAll('starlight-theme-select select')
+    expect(selects.length).toBeGreaterThan(0)
+    for (const select of selects) {
+      const options = select
+        .querySelectorAll('option')
+        .map((o) => ({ value: o.getAttribute('value'), text: textOf(o) }))
+      expect(options).toEqual([
+        { value: 'dark', text: '深色' },
+        { value: 'light', text: '淺色' },
+        { value: 'auto', text: '自動' },
+      ])
+    }
+  })
+
+  // 換頁後保留：<head> 裡在畫面出來前就讀回上次的選擇（實際切換行為留給瀏覽器測試）
+  it.each(pages)('%s 在載入時讀回讀者上次選的主題', (url) => {
+    const head = loadPage(url).querySelector('head')!
+    const restores = head
+      .querySelectorAll('script')
+      .some((s) => !s.getAttribute('src') && /localStorage/.test(s.textContent) && /data-theme|dataset\.theme/.test(s.textContent))
+    expect(restores).toBe(true)
+  })
+})
+
+describe('字體', () => {
+  const pages = ['/', ...posts.map(postUrl), '/404.html']
+  // 內文 / 標題 / 程式碼，以及原本設計用到的字重
+  const FONTS = [
+    { family: 'Noto Sans TC', weights: ['400', '500', '700'] },
+    { family: 'Noto Serif TC', weights: ['600', '900'] },
+    { family: 'JetBrains Mono', weights: ['400', '600'] },
+  ]
+
+  // 可變字體（@fontsource-variable）的字族名稱會多一個 " Variable"
+  const isFamily = (face: { family: string }, family: string) =>
+    face.family === family || face.family === `${family} Variable`
+  // font-weight 可能是單一值（400）或範圍（100 900）
+  const covers = (face: { weight: string }, weight: string) => {
+    const [lo, hi = lo] = face.weight.split(/\s+/).map(Number)
+    return lo <= Number(weight) && Number(weight) <= hi
+  }
+
+  it.each(pages)('%s 的內文、標題、程式碼字體由網站自己提供', (url) => {
+    const faces = [...stylesheetsOf(url)].flatMap(([cssUrl, css]) => fontFacesIn(css, cssUrl))
+    for (const { family, weights } of FONTS) {
+      const own = faces.filter((f) => isFamily(f, family))
+      for (const weight of weights) {
+        expect(own.some((f) => covers(f, weight)), `${family} 缺少字重 ${weight}`).toBe(true)
+      }
+      for (const src of own.flatMap((f) => f.src)) {
+        expect(isCrossOrigin(src), `${family} 從站外載入：${src}`).toBe(false)
+        expect(existsSync(distFileFor(new URL(src).pathname)), `${src} 不存在`).toBe(true)
+      }
+    }
+  })
+
+  it.each(pages)('%s 的樣式實際用到網站提供的這三套字體', (url) => {
+    const sheets = [...stylesheetsOf(url)]
+    const faces = sheets.flatMap(([cssUrl, css]) => fontFacesIn(css, cssUrl))
+    const css = sheets
+      .map(([, text]) => text)
+      .join('\n')
+      .replace(/@font-face\s*\{[^}]*\}/g, '')
+    for (const { family } of FONTS) {
+      const provided = [...new Set(faces.filter((f) => isFamily(f, family)).map((f) => f.family))]
+      const used = provided.some((name) =>
+        new RegExp(`(?:^|[\\s:,])["']?${name}["']?\\s*[,;}]`).test(css),
+      )
+      expect(used, `${family}（${provided.join('、')}）沒有被任何樣式使用`).toBe(true)
+    }
+  })
+
+  it.each(pages)('%s 沒有任何站外的字型或樣式連結', (url) => {
+    const external = resourceUrlsOf(loadPage(url)).filter(isCrossOrigin)
+    const cssExternal = [...stylesheetsOf(url).values()]
+      .flatMap((css) => [...css.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g)].map((m) => m[1]))
+      .filter((u) => !u.startsWith('data:') && isCrossOrigin(u))
+    expect([...external, ...cssExternal]).toEqual([])
+  })
 })

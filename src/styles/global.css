@@ -1,103 +1,8 @@
-/* ---------- tokens ---------- */
-:root {
-  --paper: #f6f1e7;
-  --paper-2: #efe7d8;
-  --ink: #1d1a16;
-  --ink-soft: #5b544a;
-  --rule: #d9cfbd;
-  --accent: #e8590c;          /* MobX 橘 */
-  --accent-soft: #fde3d0;
-  --code-bg: #121212;          /* 對齊 vitesse-dark */
-  --get: #2f7d6d;
-  --set: #b4500a;
-  --run: #5a4fcf;
-  --skip: #8a8275;
-
-  --font-body: 'Noto Sans TC', system-ui, sans-serif;
-  --font-display: 'Noto Serif TC', Georgia, serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --measure: 44rem;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #16130f;
-    --paper-2: #1f1b16;
-    --ink: #ece4d6;
-    --ink-soft: #a89e8e;
-    --rule: #3a332a;
-    --accent: #ff8a3d;
-    --accent-soft: #3a2414;
-    --get: #5fc4ad;
-    --set: #ff9d57;
-    --run: #a59cff;
-    --skip: #7d7568;
-    color-scheme: dark;
-  }
-}
-
-/* ---------- base ---------- */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html {
-  -webkit-text-size-adjust: 100%;
-}
-
-body {
-  margin: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-body);
-  font-size: 1.0625rem;
-  line-height: 1.85;
-  letter-spacing: 0.01em;
-}
-
-a {
-  color: inherit;
-}
-
-button {
-  font: inherit;
-}
-
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
-/* ---------- site chrome ---------- */
-.site-header,
-.site-footer {
-  width: calc(100% - 2rem);
-  max-width: calc(var(--measure) - 2rem);
-  margin: 0 auto;
-  padding: 1.5rem 0;
-}
-
-.site-mark {
-  font-family: var(--font-mono);
-  font-weight: 600;
-  text-decoration: none;
-  font-size: 0.95rem;
-}
-
-.site-mark span {
-  color: var(--accent);
-}
-
-.site-footer {
-  color: var(--ink-soft);
-  font-size: 0.85rem;
-  border-top: 1px solid var(--rule);
-  margin-top: 4rem;
-  margin-bottom: 0;
-}
+/*
+ * 網站自己的元件樣式（文章標頭的 eyebrow / lede、首頁列表、程式碼動畫、互動 demo）。
+ * 顏色、字體、版心寬度一律用 theme.css 定義的 token，不在這裡寫死。
+ * 一般排版（內文、標題、連結、程式碼框、版面）交給 Starlight。
+ */
 
 /* ---------- shared type ---------- */
 .eyebrow {
@@ -105,27 +10,19 @@ button {
   font-size: 0.78rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text); /* 小字：用對比足夠的橘 */
   margin: 0 0 0.75rem;
-}
-
-h1,
-h2 {
-  font-family: var(--font-display);
-  line-height: 1.3;
-  letter-spacing: 0.02em;
-}
-
-h1 {
-  font-size: clamp(2rem, 6vw, 2.9rem);
-  font-weight: 900;
-  margin: 0 0 1rem;
 }
 
 .lede {
   color: var(--ink-soft);
   font-size: 1.1rem;
   margin: 0;
+}
+
+/* 文章頁：標題（PageTitle 的 h1#_top）下方的導言 */
+#_top + .lede {
+  margin-top: 1rem;
 }
 
 /* ---------- home ---------- */
@@ -147,6 +44,7 @@ h1 {
   gap: 1.25rem;
   padding: 1.5rem 0;
   border-bottom: 1px solid var(--rule);
+  color: inherit;
   text-decoration: none;
 }
 
@@ -176,73 +74,6 @@ h1 {
   color: var(--ink-soft);
   font-size: 0.95rem;
   line-height: 1.7;
-}
-
-/* ---------- post ---------- */
-.post {
-  max-width: var(--measure);
-  margin: 0 auto;
-  padding: 2rem 1rem 0;
-}
-
-.post-header {
-  padding-bottom: 2rem;
-  border-bottom: 1px solid var(--rule);
-  margin-bottom: 2rem;
-}
-
-.prose h2 {
-  font-size: 1.55rem;
-  margin: 3rem 0 1rem;
-}
-
-.prose > p,
-.prose > ul,
-.prose > ol {
-  margin: 0 0 1.25rem;
-}
-
-/* 只作用在文章本文的清單，不漏進 stepper / demo 元件 */
-.prose > ul > li + li,
-.prose > ol > li + li {
-  margin-top: 0.4rem;
-}
-
-.prose :not(pre) > code {
-  font-family: var(--font-mono);
-  font-size: 0.86em;
-  background: var(--paper-2);
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  padding: 0.1em 0.35em;
-}
-
-.prose pre {
-  font-family: var(--font-mono);
-  font-size: 0.86rem;
-  line-height: 1.7;
-  padding: 1.1rem 1.25rem;
-  border-radius: 10px;
-  overflow-x: auto;
-}
-
-.post-nav {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 3.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--rule);
-  font-size: 0.95rem;
-}
-
-.post-nav a {
-  text-decoration: none;
-  color: var(--ink-soft);
-}
-
-.post-nav a:hover {
-  color: var(--accent);
 }
 
 /* ---------- magic move stepper ---------- */
