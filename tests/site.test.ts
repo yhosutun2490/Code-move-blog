@@ -63,6 +63,16 @@ describe('純靜態輸出', () => {
     const demoPages = files.filter((f) => /^mobx\/[^/]+\/demos\//.test(f))
     expect(demoPages).toEqual([])
   })
+
+  it('只產生首頁、文章頁與 404 頁，沒有多出來的頁面', () => {
+    const htmlPages = files.filter((f) => f.endsWith('.html')).sort()
+    const expected = [
+      '404.html',
+      'index.html',
+      ...posts.map((p) => `mobx/${p.folder}/index.html`),
+    ].sort()
+    expect(htmlPages).toEqual(expected)
+  })
 })
 
 describe('首頁篇章列表', () => {
