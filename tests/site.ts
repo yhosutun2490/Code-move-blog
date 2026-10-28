@@ -112,6 +112,54 @@ export function islandsOf(page: HTMLElement): Island[] {
   }))
 }
 
+/** JS 檔裡的靜態 / 動態 import 路徑 */
+function importsIn(code: string): string[] {
+  const specs = [
+    ...code.matchAll(/\bfrom\s*["']([^"']+)["']/g),
+    ...code.matchAll(/\bimport\s*\(\s*["']([^"']+)["']\s*\)/g),
+    ...code.matchAll(/\bimport\s*["']([^"']+)["']/g),
+  ].map((m) => m[1])
+  return specs.filter((s) => s.startsWith('/') || s.startsWith('.'))
+}
+
+/**
+ * 讀者打開 pageUrl 時瀏覽器可能下載的所有 JS（網址 → 原始碼）：
+ * <script src>、inline module script 的 import、island 的元件與 renderer，
+ * 以及它們遞迴 import 的 chunk。只算同站的檔案。
+ */
+export function clientScriptsOf(pageUrl: string): Map<string, string> {
+  const page = loadPage(pageUrl)
+  const base = new URL(pageUrl, 'http://site.test')
+  const queue: string[] = []
+  const enqueue = (spec: string, from: URL) => {
+    const url = new URL(spec, from)
+    if (url.origin === base.origin) queue.push(url.pathname)
+  }
+
+  for (const script of page.querySelectorAll('script')) {
+    const src = script.getAttribute('src')
+    if (src) enqueue(src, base)
+    else for (const spec of importsIn(script.textContent)) enqueue(spec, base)
+  }
+  for (const island of islandsOf(page)) {
+    if (island.componentUrl) enqueue(island.componentUrl, base)
+    if (island.rendererUrl) enqueue(island.rendererUrl, base)
+  }
+
+  const seen = new Map<string, string>()
+  while (queue.length) {
+    const path = queue.shift()!
+    if (seen.has(path)) continue
+    const file = distFileFor(path)
+    if (!existsSync(file)) throw new Error(`${pageUrl} 引用了不存在的 ${path}`)
+    const code = readFileSync(file, 'utf8')
+    seen.set(path, code)
+    const from = new URL(path, base)
+    for (const spec of importsIn(code)) enqueue(spec, from)
+  }
+  return seen
+}
+
 /** dist 底下所有檔案（相對路徑，以 / 分隔） */
 export function distFiles(dir = DIST, prefix = ''): string[] {
   const out: string[] = []

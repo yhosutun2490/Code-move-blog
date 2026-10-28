@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   allPosts,
+  clientScriptsOf,
   islandsOf,
   loadPage,
   pageExists,
@@ -106,6 +107,21 @@ describe('程式碼動畫與互動 demo', () => {
           (i) => i.opts.includes(`"${name}"`) || i.componentUrl.includes(name),
         )
         expect(found, `${url} 缺少 ${name} island`).toBe(true)
+      }
+    },
+  )
+
+  // 語法高亮引擎打包後一定會留下的字串：TextMate 語法（scopeName）、
+  // 主題（tokenColors）、Shiki 自己的錯誤類別與 WASM 載入器。
+  const SHIKI_SIGNATURES = ['scopeName', 'tokenColors', 'ShikiError', 'loadWasm']
+
+  it.each(['/', ...posts.map(postUrl)])(
+    '%s 不需要下載語法高亮引擎',
+    (url) => {
+      for (const [path, code] of clientScriptsOf(url)) {
+        for (const sig of SHIKI_SIGNATURES) {
+          expect(code.includes(sig), `${path} 含有 ${sig}`).toBe(false)
+        }
       }
     },
   )
