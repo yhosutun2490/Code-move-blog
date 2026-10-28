@@ -22,6 +22,7 @@ export default defineConfig({
       components: {
         PageTitle: './src/components/starlight/PageTitle.astro',
         SiteTitle: './src/components/starlight/SiteTitle.astro',
+        Footer: './src/components/starlight/Footer.astro',
       },
     }),
     react(),

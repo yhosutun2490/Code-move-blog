@@ -203,6 +203,24 @@ describe('系列辨識元素', () => {
     },
   )
 
+  it.each(['/', ...posts.map(postUrl), '/404.html'])(
+    '%s 的頁尾寫著打造說明，在內文之後',
+    (url) => {
+      const page = loadPage(url)
+      const credit = page
+        .querySelectorAll('main p')
+        .find((p) => textOf(p) === '用 Astro、shiki-magic-move 與 MobX 打造')
+      expect(credit, `${url} 沒有打造說明`).toBeDefined()
+      // 在頁面最下方：內文（以及上一篇 / 下一篇）都在它之前
+      const html = page.toString()
+      const creditAt = html.indexOf(credit!.toString())
+      expect(html.indexOf('<h1')).toBeLessThan(creditAt)
+      for (const a of page.querySelectorAll('a[rel="prev"], a[rel="next"]')) {
+        expect(html.indexOf(a.toString())).toBeLessThan(creditAt)
+      }
+    },
+  )
+
   it('首頁沒有「第 N 篇」', () => {
     expect(textOf(loadPage('/'))).not.toMatch(/第\s*\d+\s*篇/)
   })
