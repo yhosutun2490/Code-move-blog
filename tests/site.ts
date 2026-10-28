@@ -257,6 +257,36 @@ export function isCrossOrigin(url: string): boolean {
   return new URL(url, 'http://site.test').origin !== 'http://site.test'
 }
 
+// dist 在測試期間不會變，讀過的 CSS 檔留著重用
+const cssCache = new Map<string, string>()
+function readCss(file: string): string {
+  let css = cssCache.get(file)
+  if (css === undefined) {
+    css = readFileSync(file, 'utf8')
+    cssCache.set(file, css)
+  }
+  return css
+}
+
+let allSheets: Map<string, string> | undefined
+/** dist/_astro 裡 build 出來的所有 CSS 檔（檔名 → 內容），不管哪一頁有沒有引用 */
+export function distStylesheets(): Map<string, string> {
+  const dir = join(DIST, '_astro')
+  allSheets ??= new Map(
+    readdirSync(dir)
+      .filter((f) => f.endsWith('.css'))
+      .map((f) => [f, readCss(join(dir, f))]),
+  )
+  return allSheets
+}
+
+let allCss: string | undefined
+/** distStylesheets() 全部接成一份 */
+export function allDistCss(): string {
+  allCss ??= [...distStylesheets().values()].join('\n')
+  return allCss
+}
+
 /**
  * 讀者打開 pageUrl 時會載入的 CSS（網址 → 內容）：
  * 同站的 <link rel="stylesheet">、inline <style>，以及它們 @import 的同站檔案。
@@ -274,7 +304,7 @@ export function stylesheetsOf(pageUrl: string): Map<string, string> {
       out.set(key, '')
       return
     }
-    const css = readFileSync(distFileFor(url.pathname), 'utf8')
+    const css = readCss(distFileFor(url.pathname))
     out.set(key, css)
     for (const m of css.matchAll(/@import\s+(?:url\()?\s*["']?([^"')\s;]+)/g)) visit(m[1], url)
   }

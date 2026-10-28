@@ -4,13 +4,11 @@
  * - 程式碼動畫：從 build 出來的 island props 讀出每一步的程式碼和 token 顏色
  * - 一般程式碼區塊：從 dist 裡的樣式表讀出實際生效的 CSS 變數
  */
-import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { createRenderer } from '@astrojs/starlight/expressive-code'
 import { toHtml } from '@astrojs/starlight/expressive-code/hast'
 import { parse as parseHtml, type HTMLElement } from 'node-html-parser'
 import { expressiveCode } from '../src/lib/code-blocks'
-import { DIST, islandsOf } from './site'
+import { allDistCss, distStylesheets, islandsOf } from './site'
 
 /**
  * 用網站的 Expressive Code 設定渲染一個 Markdown 程式碼區塊。
@@ -89,19 +87,9 @@ export function charColorsOfBlock(block: HTMLElement, fallback: string): CharCol
   return out
 }
 
-/** dist 裡所有 CSS 檔（路徑 → 內容） */
-function stylesheets(): Map<string, string> {
-  const dir = join(DIST, '_astro')
-  return new Map(
-    readdirSync(dir)
-      .filter((f) => f.endsWith('.css'))
-      .map((f) => [f, readFileSync(join(dir, f), 'utf8')]),
-  )
-}
-
 /** Expressive Code 產生的程式碼區塊樣式表 */
 export function codeBlockStylesheet(): string {
-  const found = [...stylesheets()].filter(([f]) => /^ec\./.test(f))
+  const found = [...distStylesheets()].filter(([f]) => /^ec\./.test(f))
   if (found.length !== 1) throw new Error(`預期一份程式碼區塊樣式表，找到 ${found.length} 份`)
   return found[0][1]
 }
@@ -113,8 +101,7 @@ export function codeBlockStylesheet(): string {
 export function ruleValue(selector: string, prop: string): string {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+')
   const re = new RegExp(`(?:^|[},])\\s*${escaped}\\s*\\{([^}]*)\\}`, 'g')
-  const allCss = [...stylesheets().values()].join('\n')
-  const values = [...allCss.matchAll(re)].flatMap((m) => declaredValues(m[1], prop))
+  const values = [...allDistCss().matchAll(re)].flatMap((m) => declaredValues(m[1], prop))
   if (values.length === 0) throw new Error(`CSS 裡找不到 ${selector} { ${prop} }`)
   return values.at(-1)!
 }
@@ -132,8 +119,7 @@ export function declaredValues(css: string, prop: string): string[] {
 export function resolveCssValue(value: string, depth = 0): string[] {
   const m = value.match(/^var\(\s*(--[\w-]+)\s*(?:,\s*(.+))?\)$/)
   if (!m || depth > 10) return [value]
-  const allCss = [...stylesheets().values()].join('\n')
-  const declared = declaredValues(allCss, m[1])
+  const declared = declaredValues(allDistCss(), m[1])
   const candidates = declared.length ? declared : m[2] ? [m[2]] : []
   return [...new Set(candidates.flatMap((v) => resolveCssValue(v, depth + 1)))]
 }
