@@ -23,14 +23,17 @@
 ::backdrop {
   --paper: #16130f; /* 頁面底色 */
   --paper-2: #1f1b16; /* 卡片、側欄、導覽列 */
+  --paper-soft: #1a1612; /* 介於 --paper 和 --paper-2 之間（Starlight 的 gray-7） */
   --ink: #ece4d6; /* 內文 */
   --ink-strong: #fbf6ec; /* 標題等最高對比文字 */
+  --ink-dim: #cfc6b6; /* 比內文淡一階（Starlight 的 gray-2） */
   --ink-soft: #a89e8e; /* 次要文字 */
+  --ink-faint: #6e6557; /* 比次要文字再淡一階（Starlight 的 gray-4） */
   --rule: #3a332a; /* 分隔線、框線 */
   --accent: #ff8a3d; /* MobX 橘 */
   --accent-soft: #3a2414; /* 橘色淡底 */
   --accent-text: #ffb27a; /* 放在底色上當文字（連結）用的橘 */
-  --code-bg: #121212; /* 對齊 vitesse-dark，兩種模式都一樣 */
+  --code-bg: #121212; /* = CODE_THEME（src/lib/highlighter.ts）的背景色，兩種模式都一樣；換主題時一起改 */
   --get: #5fc4ad;
   --set: #ff9d57;
   --run: #a59cff;
@@ -39,9 +42,9 @@
   /* Starlight 灰階：1 最亮 … 6 最接近底色 */
   --sl-color-white: var(--ink-strong);
   --sl-color-gray-1: var(--ink);
-  --sl-color-gray-2: #cfc6b6;
+  --sl-color-gray-2: var(--ink-dim);
   --sl-color-gray-3: var(--ink-soft);
-  --sl-color-gray-4: #6e6557;
+  --sl-color-gray-4: var(--ink-faint);
   --sl-color-gray-5: var(--rule);
   --sl-color-gray-6: var(--paper-2);
   --sl-color-black: var(--paper);
@@ -53,9 +56,12 @@
 [data-theme='light'] ::backdrop {
   --paper: #f6f1e7;
   --paper-2: #efe7d8;
+  --paper-soft: #f2ece0;
   --ink: #1d1a16;
   --ink-strong: #14110d;
+  --ink-dim: #3a352e;
   --ink-soft: #5b544a;
+  --ink-faint: #8a8275;
   --rule: #d9cfbd;
   --accent: #e8590c;
   --accent-soft: #fde3d0;
@@ -68,12 +74,12 @@
   /* Starlight 灰階：1 最深 … 7 最接近底色 */
   --sl-color-white: var(--ink-strong);
   --sl-color-gray-1: var(--ink);
-  --sl-color-gray-2: #3a352e;
+  --sl-color-gray-2: var(--ink-dim);
   --sl-color-gray-3: var(--ink-soft);
-  --sl-color-gray-4: #8a8275;
+  --sl-color-gray-4: var(--ink-faint);
   --sl-color-gray-5: var(--rule);
   --sl-color-gray-6: var(--paper-2);
-  --sl-color-gray-7: #f2ece0;
+  --sl-color-gray-7: var(--paper-soft); /* Starlight 只在淺色用到 gray-7 */
   --sl-color-black: var(--paper);
   --sl-color-backdrop-overlay: hsla(32, 14%, 30%, 0.5);
 }
