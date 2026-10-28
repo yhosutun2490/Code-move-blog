@@ -81,6 +81,48 @@ describe('純靜態輸出', () => {
   })
 })
 
+describe('首頁是系列封面', () => {
+  const COVER_TITLE = '把 MobX 拆開來看'
+  const COVER_LEDE =
+    '從最基本的 getter / setter 開始，一步一步疊出依賴追蹤、computed、action 與 observer。每篇都有程式碼動畫和可以直接玩的 demo。'
+
+  it('標題是封面標題，緊接著以導言樣式顯示導言', () => {
+    const h1 = loadPage('/').querySelector('h1')!
+    expect(textOf(h1)).toBe(COVER_TITLE)
+    const below = h1.nextElementSibling
+    expect(below && textOf(below)).toBe(COVER_LEDE)
+    expect(below?.classList.contains('lede')).toBe(true)
+  })
+
+  it('篇章列表在導言之後', () => {
+    const html = loadPage('/').toString()
+    const firstPost = html.indexOf(`href="${postUrl(posts[0])}"`, html.indexOf(COVER_LEDE))
+    expect(html.indexOf(COVER_LEDE)).toBeGreaterThan(html.indexOf(COVER_TITLE))
+    expect(firstPost).toBeGreaterThan(-1)
+  })
+
+  // 同一個頁首：字標、搜尋、主題切換，連標記都一模一樣。
+  // 比對 dist 裡的每一頁，所以也證明沒有任何頁面還套著舊的手刻版型。
+  const htmlPages = distFiles()
+    .filter((f) => f.endsWith('.html'))
+    .map((f) => '/' + f.replace(/(^|\/)index\.html$/, '$1'))
+  it.each(htmlPages)('%s 的頁首和文章頁相同（字標、搜尋、主題切換）', (url) => {
+    const headerOf = (u: string) => loadPage(u).querySelector('header')
+    const header = headerOf(url)
+    expect(header, `${url} 沒有頁首`).not.toBeNull()
+    expect(header!.querySelector('a.site-mark[href="/"]')).not.toBeNull()
+    expect(header!.querySelector('site-search')).not.toBeNull()
+    expect(header!.querySelector('starlight-theme-select')).not.toBeNull()
+    expect(header!.toString()).toBe(headerOf(postUrl(posts[0]))!.toString())
+  })
+
+  it('瀏覽器分頁標題與摘要是封面標題與導言', () => {
+    const head = loadPage('/').querySelector('head')!
+    expect(textOf(head.querySelector('title')!)).toBe(`${COVER_TITLE} | mobx/motion`)
+    expect(head.querySelector('meta[name="description"]')?.getAttribute('content')).toBe(COVER_LEDE)
+  })
+})
+
 describe('首頁篇章列表', () => {
   // 首頁上「篇章列表」的項目 = 連到文章、而且連結文字含簡介的那些連結。
   // （側欄或其他導覽也會連到文章，但不會附上簡介。）
