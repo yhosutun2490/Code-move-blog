@@ -212,6 +212,42 @@ describe('全站搜尋', () => {
   )
 })
 
+describe('繁體中文介面', () => {
+  const pages = ['/', ...posts.map(postUrl), '/404.html']
+  const CJK = /[㐀-鿿]/
+
+  it.each(pages)('%s 的頁面語言是繁體中文', (url) => {
+    expect(loadPage(url).querySelector('html')?.getAttribute('lang')).toBe('zh-Hant-TW')
+  })
+
+  // 翻譯缺漏時 Starlight 會直接輸出字串的 key，例如 search.label、page.nextLink
+  const UI_KEY =
+    /\b(?:skipLink|search|themeSelect|languageSelect|menuButton|sidebarNav|tableOfContents|page|404|i18n|aside|expressiveCode|fileTree|builtWithStarlight|heading)\.[a-zA-Z]+/
+
+  it.each(pages)('%s 沒有未翻譯的介面字串', (url) => {
+    const page = loadPage(url)
+    for (const el of page.querySelectorAll('script, style')) el.remove()
+    expect(page.toString().match(UI_KEY)?.[0]).toBeUndefined()
+  })
+
+  it.each(pages)('%s 的無障礙標籤都是中文', (url) => {
+    const labels = loadPage(url)
+      .querySelectorAll('[aria-label]')
+      .map((el) => el.getAttribute('aria-label')!)
+    expect(labels.length).toBeGreaterThan(0)
+    expect(labels.filter((l) => !CJK.test(l))).toEqual([])
+  })
+
+  it.each(posts.map(postUrl))('%s 的搜尋、本頁目錄、主題切換是中文', (url) => {
+    const page = loadPage(url)
+    const search = page.querySelector('site-search button')
+    expect(search?.getAttribute('aria-label')).toBe('搜尋')
+    expect(tocOf(page)?.label).toBe('本頁內容')
+    const themes = page.querySelectorAll('starlight-theme-select option').map(textOf)
+    expect(themes).toEqual(expect.arrayContaining(['深色', '淺色', '自動']))
+  })
+})
+
 describe('上一篇 / 下一篇', () => {
   const links = (url: string, rel: 'prev' | 'next') =>
     loadPage(url)
