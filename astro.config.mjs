@@ -26,7 +26,7 @@ export default defineConfig({
         SiteTitle: './src/components/starlight/SiteTitle.astro',
         Footer: './src/components/starlight/Footer.astro',
       },
-      // 一般程式碼區塊：和程式碼動畫共用 vitesse-dark（見 src/lib/code-blocks.ts）
+      // 一般程式碼區塊：和程式碼動畫共用 CODE_THEME（見 src/lib/code-blocks.ts）
       expressiveCode,
     }),
     react(),
