@@ -93,6 +93,25 @@ export function textOf(el: HTMLElement): string {
   return el.textContent.replace(/\s+/g, ' ').trim()
 }
 
+export interface Island {
+  componentUrl: string
+  rendererUrl: string
+  /** 已解碼的 props 字串（Astro 序列化後的 JSON） */
+  props: string
+  /** 已解碼的 opts 字串（含元件名稱） */
+  opts: string
+}
+
+/** 頁面上所有 client island（Astro 的 <astro-island> 標記） */
+export function islandsOf(page: HTMLElement): Island[] {
+  return page.querySelectorAll('astro-island').map((el) => ({
+    componentUrl: el.getAttribute('component-url') ?? '',
+    rendererUrl: el.getAttribute('renderer-url') ?? '',
+    props: el.getAttribute('props') ?? '',
+    opts: el.getAttribute('opts') ?? '',
+  }))
+}
+
 /** dist 底下所有檔案（相對路徑，以 / 分隔） */
 export function distFiles(dir = DIST, prefix = ''): string[] {
   const out: string[] = []

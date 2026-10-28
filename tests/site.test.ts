@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   allPosts,
+  islandsOf,
   loadPage,
   pageExists,
   postUrl,
@@ -67,4 +68,45 @@ describe('首頁篇章列表', () => {
       expect(home.querySelector(`a[href="${postUrl(draft)}"]`)).toBeNull()
     }
   })
+})
+
+describe('程式碼動畫與互動 demo', () => {
+  // 預期值從文章原始碼推得：每個 <MagicSteps> 一個動畫，每個 client:* 元件一個 demo
+  const withMagicSteps = posts.filter((p) => /<MagicSteps\b/.test(p.body))
+  const demoNames = (p: (typeof posts)[number]) =>
+    [...p.body.matchAll(/<([A-Z]\w*)\b[^>]*\bclient:\w+/g)].map((m) => m[1])
+
+  // 預先算好的 keyed tokens：每個 token 有內容、顏色和動畫用的 key
+  const hasPrecomputedTokens = (island: { props: string }) =>
+    /"tokens"/.test(island.props) &&
+    /"content"/.test(island.props) &&
+    /"color"\s*:\s*\[\s*0\s*,\s*"#[0-9a-fA-F]{3,8}"/.test(island.props) &&
+    /"key"/.test(island.props)
+
+  it('至少有一篇含程式碼動畫和 demo（避免測試空轉）', () => {
+    expect(withMagicSteps.length).toBeGreaterThan(0)
+    expect(posts.some((p) => demoNames(p).length > 0)).toBe(true)
+  })
+
+  it.each(posts.map((p) => [postUrl(p), p] as const))(
+    '%s 的每個程式碼動畫都是 island，且帶著 build 時算好的 tokens',
+    (url, post) => {
+      const expected = post.body.match(/<MagicSteps\b/g)?.length ?? 0
+      const islands = islandsOf(loadPage(url)).filter(hasPrecomputedTokens)
+      expect(islands).toHaveLength(expected)
+    },
+  )
+
+  it.each(posts.map((p) => [postUrl(p), p] as const))(
+    '%s 的每個互動 demo 都是 island',
+    (url, post) => {
+      const islands = islandsOf(loadPage(url))
+      for (const name of demoNames(post)) {
+        const found = islands.some(
+          (i) => i.opts.includes(`"${name}"`) || i.componentUrl.includes(name),
+        )
+        expect(found, `${url} 缺少 ${name} island`).toBe(true)
+      }
+    },
+  )
 })
