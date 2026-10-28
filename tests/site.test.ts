@@ -100,6 +100,14 @@ describe('首頁是系列封面', () => {
     expect(above?.classList.contains('eyebrow')).toBe(true)
   })
 
+  it('沒有側欄和本頁目錄，內容是單欄', () => {
+    const home = loadPage('/')
+    const html = home.querySelector('html')!
+    expect(html.hasAttribute('data-has-sidebar'), '首頁有側欄').toBe(false)
+    expect(html.hasAttribute('data-has-toc'), '首頁有本頁目錄').toBe(false)
+    expect(tocOf(home)).toBeUndefined()
+  })
+
   it('篇章列表在導言之後', () => {
     const html = loadPage('/').toString()
     const firstPost = html.indexOf(`href="${postUrl(posts[0])}"`, html.indexOf(COVER_LEDE))

@@ -14,11 +14,13 @@ const frontmatter = {
   description:
     '從最基本的 getter / setter 開始，一步一步疊出依賴追蹤、computed、action 與 observer。每篇都有程式碼動畫和可以直接玩的 demo。',
   order: 0, // 只為了通過 schema（order 必填），首頁不在側欄裡，這個值不會被用到
-  template: 'splash' as const,
+  // 用一般文章版型（不用 splash），只關掉本頁目錄；側欄由下面的 hasSidebar 關掉。
+  // 封面只有一欄：標題、導言、篇章列表，篇章列表本身就是導覽。
+  tableOfContents: false as const,
 }
 ---
 
-<StarlightPage frontmatter={frontmatter}>
+<StarlightPage frontmatter={frontmatter} hasSidebar={false}>
   <ol class="series not-content">
     {
       posts.map((post) => (
