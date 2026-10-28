@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
 import react from '@astrojs/react'
+import { expressiveCode } from './src/lib/code-blocks'
 
 // 靜態輸出：build 完就是純 HTML + 少量 island JS，丟到任何靜態主機都能跑。
 // 之後要接 Void / Cloudflare 時，只需要在這裡加 adapter。
@@ -19,6 +20,8 @@ export default defineConfig({
       // 暫時沿用原本的全域樣式（stepper、demo、首頁）；主題 token 會在之後整理
       customCss: ['./src/styles/global.css'],
       routeMiddleware: './src/routeData.ts',
+      // 一般程式碼區塊：和程式碼動畫共用 vitesse-dark（見 src/lib/code-blocks.ts）
+      expressiveCode,
     }),
     react(),
   ],
