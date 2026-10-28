@@ -12,7 +12,10 @@ npm run dev        # http://localhost:4321
 npm run build      # 靜態輸出到 dist/
 npm run preview    # 預覽 build 結果
 npm test           # build 後檢查 dist/ 的頁面（網址、首頁列表、側欄、目錄、搜尋、上下篇、繁中介面、island、無 Shiki）
+npm run test:e2e   # build 後用 Playwright 在瀏覽器操作 preview：程式碼動畫、兩個 demo、主題切換、手機版面與選單
 ```
+
+`test:e2e` 的測試在 `e2e/`，第一次跑之前要下載瀏覽器：`npx playwright install chromium`。
 
 需要 Node 22 以上。
 
