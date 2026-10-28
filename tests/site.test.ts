@@ -16,6 +16,8 @@ import {
   searchIndex,
   sectionHeadings,
   sidebarOf,
+  siteUiStrings,
+  starlightUiStrings,
   stylesheetsOf,
   textOf,
   tocOf,
@@ -92,6 +94,20 @@ describe('首頁是系列封面', () => {
     const below = h1.nextElementSibling
     expect(below && textOf(below)).toBe(COVER_LEDE)
     expect(below?.classList.contains('lede')).toBe(true)
+  })
+
+  it('標題上方以 eyebrow 樣式寫著「自我學習系列」', () => {
+    const above = loadPage('/').querySelector('h1')!.previousElementSibling
+    expect(above && textOf(above)).toBe('自我學習系列')
+    expect(above?.classList.contains('eyebrow')).toBe(true)
+  })
+
+  it('沒有側欄和本頁目錄，內容是單欄', () => {
+    const home = loadPage('/')
+    const html = home.querySelector('html')!
+    expect(html.hasAttribute('data-has-sidebar'), '首頁有側欄').toBe(false)
+    expect(html.hasAttribute('data-has-toc'), '首頁有本頁目錄').toBe(false)
+    expect(tocOf(home)).toBeUndefined()
   })
 
   it('篇章列表在導言之後', () => {
@@ -343,6 +359,20 @@ describe('繁體中文介面', () => {
     const page = loadPage(url)
     for (const el of page.querySelectorAll('script, style')) el.remove()
     expect(page.toString().match(UI_KEY)?.[0]).toBeUndefined()
+  })
+
+  // 上面的頁面檢查只看得到目前頁面用到的字串（例如只有一篇時看不到「下一篇」）。
+  // 字典缺 key 時 Starlight 會直接輸出 key，所以直接比對字典，Starlight 升級新增字串也會抓到
+  it('Starlight 的每一條介面字串都有繁中翻譯', async () => {
+    const english = await starlightUiStrings()
+    const ours = siteUiStrings()
+    expect(Object.keys(english).length).toBeGreaterThan(0)
+    // 鍵盤按鍵名稱本來就是英文
+    const KEEP_ENGLISH = ['search.ctrlKey']
+    const untranslated = Object.keys(english).filter(
+      (key) => !KEEP_ENGLISH.includes(key) && (!ours[key] || ours[key] === english[key]),
+    )
+    expect(untranslated).toEqual([])
   })
 
   it.each(pages)('%s 的無障礙標籤都是中文', (url) => {
