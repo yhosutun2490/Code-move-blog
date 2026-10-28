@@ -191,6 +191,18 @@ describe('系列辨識元素', () => {
     },
   )
 
+  it.each(['/', ...posts.map(postUrl), '/404.html'])(
+    '%s 的頁首有 mobx/motion 字標，斜線單獨上色，連到首頁',
+    (url) => {
+      const mark = loadPage(url)
+        .querySelectorAll('header a[href="/"]')
+        .find((a) => textOf(a) === 'mobx/motion')
+      expect(mark, `${url} 頁首沒有連到首頁的字標`).toBeDefined()
+      // 斜線包在自己的元素裡，才能用 MobX 橘上色
+      expect(mark!.querySelectorAll('*').map(textOf)).toContain('/')
+    },
+  )
+
   it('首頁沒有「第 N 篇」', () => {
     expect(textOf(loadPage('/'))).not.toMatch(/第\s*\d+\s*篇/)
   })
