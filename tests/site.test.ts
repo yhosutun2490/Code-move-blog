@@ -175,6 +175,63 @@ describe('程式碼動畫與互動 demo', () => {
   )
 })
 
+describe('系列辨識元素', () => {
+  const titleOf = (url: string) => loadPage(url).querySelector('h1')!
+
+  it.each(posts.map((p) => [postUrl(p), p] as const))(
+    '%s 的標題上方寫著「第 N 篇 / 共 M 篇」',
+    (url, post) => {
+      const above = titleOf(url).previousElementSibling
+      expect(above && textOf(above)).toBe(
+        `MobX 拆解 · 第 ${post.order} 篇 / 共 ${posts.length} 篇`,
+      )
+    },
+  )
+
+  it.each(posts.map((p) => [postUrl(p), p] as const))(
+    '%s 的標題下方以導言樣式顯示簡介',
+    (url, post) => {
+      const below = titleOf(url).nextElementSibling
+      expect(below && textOf(below)).toBe(post.description)
+      expect(below?.classList.contains('lede')).toBe(true)
+    },
+  )
+
+  it.each(['/', ...posts.map(postUrl), '/404.html'])(
+    '%s 的頁首有 mobx/motion 字標，斜線單獨上色，連到首頁',
+    (url) => {
+      const mark = loadPage(url)
+        .querySelectorAll('header a[href="/"]')
+        .find((a) => textOf(a) === 'mobx/motion')
+      expect(mark, `${url} 頁首沒有連到首頁的字標`).toBeDefined()
+      // 斜線包在自己的元素裡，才能用 MobX 橘上色
+      expect(mark!.querySelectorAll('*').map(textOf)).toContain('/')
+    },
+  )
+
+  it.each(['/', ...posts.map(postUrl), '/404.html'])(
+    '%s 的頁尾寫著打造說明，在內文之後',
+    (url) => {
+      const page = loadPage(url)
+      const credit = page
+        .querySelectorAll('main p')
+        .find((p) => textOf(p) === '用 Astro、shiki-magic-move 與 MobX 打造')
+      expect(credit, `${url} 沒有打造說明`).toBeDefined()
+      // 在頁面最下方：內文（以及上一篇 / 下一篇）都在它之前
+      const html = page.toString()
+      const creditAt = html.indexOf(credit!.toString())
+      expect(html.indexOf('<h1')).toBeLessThan(creditAt)
+      for (const a of page.querySelectorAll('a[rel="prev"], a[rel="next"]')) {
+        expect(html.indexOf(a.toString())).toBeLessThan(creditAt)
+      }
+    },
+  )
+
+  it('首頁沒有「第 N 篇」', () => {
+    expect(textOf(loadPage('/'))).not.toMatch(/第\s*\d+\s*篇/)
+  })
+})
+
 describe('文章頁側欄', () => {
   it.each(posts.map((p) => [postUrl(p), p] as const))(
     '%s 的側欄依篇章順序列出所有篇章，並標出目前篇章',
@@ -262,6 +319,54 @@ describe('繁體中文介面', () => {
     const themes = page.querySelectorAll('starlight-theme-select option').map(textOf)
     expect(themes).toEqual(expect.arrayContaining(['深色', '淺色', '自動']))
   })
+})
+
+describe('草稿在全站隱藏', () => {
+  const drafts = allPosts().filter((p) => p.draft)
+  const htmlPages = distFiles().filter((f) => f.endsWith('.html'))
+
+  it('至少有一篇草稿（避免測試空轉）', () => {
+    expect(drafts.length).toBeGreaterThan(0)
+  })
+
+  it.each(drafts.map((p) => [postUrl(p), p] as const))(
+    '%s 沒有頁面，任何頁面（側欄、首頁、上下篇）都不連到它',
+    (url) => {
+      expect(pageExists(url)).toBe(false)
+      for (const file of htmlPages) {
+        const page = loadPage(`/${file}`)
+        const linked = page
+          .querySelectorAll('a[href]')
+          .some((a) => a.getAttribute('href')!.split(/[?#]/)[0] === url)
+        expect(linked, `${file} 連到草稿 ${url}`).toBe(false)
+      }
+    },
+  )
+
+  it.each(drafts.map((p) => [postUrl(p), p] as const))(
+    '%s 的標題不出現在任何頁面上',
+    (_url, draft) => {
+      for (const file of htmlPages) {
+        expect(textOf(loadPage(`/${file}`)), file).not.toContain(draft.title)
+      }
+    },
+  )
+
+  it.each(drafts.map((p) => [postUrl(p), p] as const))(
+    '%s 不在搜尋索引裡',
+    (url, draft) => {
+      const index = searchIndex()
+      expect(index.length, '搜尋索引是空的').toBeGreaterThan(0)
+      expect(index.map((r) => r.url)).not.toContain(url)
+      for (const record of index) {
+        expect(record.title).not.toBe(draft.title)
+        expect(record.content, record.url).not.toContain(draft.description)
+        for (const heading of sectionHeadings(draft)) {
+          expect(record.content, record.url).not.toContain(heading)
+        }
+      }
+    },
+  )
 })
 
 describe('上一篇 / 下一篇', () => {

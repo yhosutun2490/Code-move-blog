@@ -20,6 +20,11 @@ export default defineConfig({
       // global.css：網站自己的元件樣式（eyebrow / lede、首頁、stepper、demo），只用 theme.css 的 token
       customCss: ['./src/styles/theme.css', './src/styles/global.css'],
       routeMiddleware: './src/routeData.ts',
+      components: {
+        PageTitle: './src/components/starlight/PageTitle.astro',
+        SiteTitle: './src/components/starlight/SiteTitle.astro',
+        Footer: './src/components/starlight/Footer.astro',
+      },
     }),
     react(),
   ],
