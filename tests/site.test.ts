@@ -16,6 +16,8 @@ import {
   searchIndex,
   sectionHeadings,
   sidebarOf,
+  siteUiStrings,
+  starlightUiStrings,
   stylesheetsOf,
   textOf,
   tocOf,
@@ -357,6 +359,20 @@ describe('繁體中文介面', () => {
     const page = loadPage(url)
     for (const el of page.querySelectorAll('script, style')) el.remove()
     expect(page.toString().match(UI_KEY)?.[0]).toBeUndefined()
+  })
+
+  // 上面的頁面檢查只看得到目前頁面用到的字串（例如只有一篇時看不到「下一篇」）。
+  // 字典缺 key 時 Starlight 會直接輸出 key，所以直接比對字典，Starlight 升級新增字串也會抓到
+  it('Starlight 的每一條介面字串都有繁中翻譯', async () => {
+    const english = await starlightUiStrings()
+    const ours = siteUiStrings()
+    expect(Object.keys(english).length).toBeGreaterThan(0)
+    // 鍵盤按鍵名稱本來就是英文
+    const KEEP_ENGLISH = ['search.ctrlKey']
+    const untranslated = Object.keys(english).filter(
+      (key) => !KEEP_ENGLISH.includes(key) && (!ours[key] || ours[key] === english[key]),
+    )
+    expect(untranslated).toEqual([])
   })
 
   it.each(pages)('%s 的無障礙標籤都是中文', (url) => {

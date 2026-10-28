@@ -8,6 +8,7 @@
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { gunzipSync } from 'node:zlib'
 import { parse as parseHtml, type HTMLElement } from 'node-html-parser'
 import { parse as parseYaml } from 'yaml'
@@ -315,6 +316,23 @@ export function stylesheetsOf(pageUrl: string): Map<string, string> {
     out.set(`${pageUrl}#style-${i}`, style.textContent)
   })
   return out
+}
+
+/**
+ * Starlight 內建的英文介面字串（key → 英文）：Starlight 有哪些介面字串，以這份為準。
+ * 套件沒有匯出翻譯檔，所以直接讀 dist 裡的檔案；升級 Starlight 時這份會跟著變。
+ */
+export async function starlightUiStrings(): Promise<Record<string, string>> {
+  const file = join(ROOT, 'node_modules/@astrojs/starlight/dist/translations/en.js')
+  return (await import(pathToFileURL(file).href)).default
+}
+
+/**
+ * 網站提供的繁中介面字串（src/content/i18n/zh-Hant-TW.json）。
+ * zh-Hant-TW 對不到 Starlight 內建的 zh-TW，所以介面字串全靠這份。
+ */
+export function siteUiStrings(): Record<string, string> {
+  return JSON.parse(readFileSync(join(CONTENT, 'i18n/zh-Hant-TW.json'), 'utf8'))
 }
 
 export interface FontFace {
