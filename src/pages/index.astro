@@ -1,13 +1,11 @@
 ---
 // StarlightPage 必須是第一個 import（Starlight 依此決定 CSS layer 順序）
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro'
-import { getCollection } from 'astro:content'
+import { publishedSeriesPosts } from '../lib/series'
 
-// 系列封面：標題與導言由 PageTitle 依 frontmatter 畫（和文章頁的標題區同一套），
+// 系列封面：eyebrow、標題與導言由 PageTitle 依 frontmatter 畫（和文章頁的標題區同一套），
 // 這裡只負責篇章列表。依篇章順序，不含草稿。
-const posts = (
-  await getCollection('docs', ({ id, data }) => id.startsWith('mobx/') && !data.draft)
-).sort((a, b) => a.data.order - b.data.order)
+const posts = await publishedSeriesPosts()
 
 // StarlightPage 會用 docs 集合的 schema 驗證 frontmatter，所以 description、order 都要給。
 // description 就是封面導言，也是 <meta name="description">。
@@ -15,7 +13,7 @@ const frontmatter = {
   title: '把 MobX 拆開來看',
   description:
     '從最基本的 getter / setter 開始，一步一步疊出依賴追蹤、computed、action 與 observer。每篇都有程式碼動畫和可以直接玩的 demo。',
-  order: 0,
+  order: 0, // 只為了通過 schema（order 必填），首頁不在側欄裡，這個值不會被用到
   template: 'splash' as const,
 }
 ---

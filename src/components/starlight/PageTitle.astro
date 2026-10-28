@@ -1,18 +1,16 @@
 ---
 // 標題區：文章頁是「第 N 篇 / 共 M 篇」+ 標題 + 導言（frontmatter description）；
-// 首頁（StarlightPage，entry.id 是 ''）是系列封面：標題 + 導言，沒有「第 N 篇」。
+// 首頁（StarlightPage，entry.id 是 ''）是系列封面：「自我學習系列」+ 標題 + 導言。
 import Default from '@astrojs/starlight/components/PageTitle.astro'
-import { getCollection } from 'astro:content'
+import { isSeriesPost, publishedSeriesPosts } from '../../lib/series'
 
 const { entry } = Astro.locals.starlightRoute
-const isPost = entry.id.startsWith('mobx/')
+const isPost = isSeriesPost(entry.id)
 const isHome = entry.id === ''
-// production build 已排除草稿的頁面，但 getCollection 不會，所以 M 要自己濾掉草稿
-const total = isPost
-  ? (await getCollection('docs', ({ id, data }) => id.startsWith('mobx/') && !data.draft)).length
-  : 0
+const total = isPost ? (await publishedSeriesPosts()).length : 0
 ---
 
 {isPost && <p class="eyebrow">MobX 拆解 · 第 {entry.data.order} 篇 / 共 {total} 篇</p>}
+{isHome && <p class="eyebrow">自我學習系列</p>}
 <Default />
 {(isPost || isHome) && <p class="lede">{entry.data.description}</p>}

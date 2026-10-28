@@ -94,6 +94,12 @@ describe('首頁是系列封面', () => {
     expect(below?.classList.contains('lede')).toBe(true)
   })
 
+  it('標題上方以 eyebrow 樣式寫著「自我學習系列」', () => {
+    const above = loadPage('/').querySelector('h1')!.previousElementSibling
+    expect(above && textOf(above)).toBe('自我學習系列')
+    expect(above?.classList.contains('eyebrow')).toBe(true)
+  })
+
   it('篇章列表在導言之後', () => {
     const html = loadPage('/').toString()
     const firstPost = html.indexOf(`href="${postUrl(posts[0])}"`, html.indexOf(COVER_LEDE))
