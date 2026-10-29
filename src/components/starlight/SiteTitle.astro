@@ -1,0 +1,20 @@
+---
+// 頁首字標 mobx/motion：斜線用 MobX 橘，點了回首頁。
+const { siteTitleHref } = Astro.locals.starlightRoute
+---
+
+<a href={siteTitleHref} class="site-mark" translate="no">mobx<span>/</span>motion</a>
+
+<style>
+  .site-mark {
+    font-family: var(--font-mono);
+    font-size: var(--sl-text-h4);
+    font-weight: 600;
+    color: var(--sl-color-white);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .site-mark span {
+    color: var(--accent);
+  }
+</style>
