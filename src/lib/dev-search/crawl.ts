@@ -17,8 +17,7 @@ const LINK = /<a\b[^>]*?\bhref="([^"]*)"/gi
 /** 頁面裡所有同站頁面連結的路徑（去掉 # 和 ?） */
 function pageLinksIn(html: string, pageUrl: URL): string[] {
   const paths: string[] = []
-  for (const [, raw] of html.matchAll(LINK)) {
-    const href = raw.replaceAll('&amp;', '&')
+  for (const [, href] of html.matchAll(LINK)) {
     let url: URL
     try {
       url = new URL(href, pageUrl)
@@ -49,6 +48,7 @@ export async function crawlPages(
     const response = await fetchPage(url)
     const isHtml = response.headers.get('content-type')?.includes('text/html') ?? false
     if (response.status !== 200 || !isHtml) {
+      await response.body?.cancel()
       if (path === start) throw new Error(`dev 搜尋：抓不到 ${path}（HTTP ${response.status}）`)
       continue
     }

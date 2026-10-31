@@ -60,7 +60,7 @@ describe('dev 搜尋：從首頁抓頁面', () => {
     expect(requested.sort()).toEqual(['/', '/a/1/'])
   })
 
-  test('相對連結以所在頁面為基準解析；&amp; 會先解碼', async () => {
+  test('相對連結以所在頁面為基準解析', async () => {
     const { fetchPage } = fakeFetch({
       '/a/': [200, 'text/html', html('1/', '../b/?x=1&amp;y=2')],
       '/a/1/': [200, 'text/html', html()],
@@ -81,6 +81,6 @@ describe('dev 搜尋：從首頁抓頁面', () => {
 
   test('首頁本身抓不到時丟出錯誤（dev server 有問題，不該建出空索引）', async () => {
     const { fetchPage } = fakeFetch({ '/': [500, 'text/html', 'boom'] })
-    await expect(crawlPages(ORIGIN, fetchPage)).rejects.toThrow('/')
+    await expect(crawlPages(ORIGIN, fetchPage)).rejects.toThrow('抓不到 /（HTTP 500）')
   })
 })
