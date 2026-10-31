@@ -6,9 +6,9 @@
  */
 export const siteConfig = {
   /** Starlight 的 title，也是瀏覽器分頁標題的後綴（「<頁面標題> | <站名>」） */
-  name: 'mobx/motion',
+  name: 'Rafael Coding 雜記',
   /** 頁首字標：「前段/後段」，中間的斜線單獨上色 */
-  mark: { before: 'mobx', after: 'motion' },
+  mark: { before: 'rafael', after: 'notes' },
   /** 首頁封面；導言同時是首頁的 meta description */
   cover: {
     eyebrow: '程式碼拆解筆記',
