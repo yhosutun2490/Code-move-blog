@@ -1,4 +1,5 @@
 import { defineRouteMiddleware, type StarlightRouteData } from '@astrojs/starlight/route-data'
+import { paginationWithinGroup } from './lib/pagination'
 
 type Entry = StarlightRouteData['sidebar'][number]
 
@@ -25,4 +26,7 @@ export const onRequest = defineRouteMiddleware((context) => {
   const route = context.locals.starlightRoute
   route.sidebar = unwrapSingleLinkGroups(route.sidebar)
   route.sidebar = dropEmptyGroups(route.sidebar)
+  // 上一篇 / 下一篇只在同一個主題（目前頁面所在的頂層群組）內串連，要在整理完側欄之後算。
+  // 這會蓋掉 Starlight 的預設分頁，文章 frontmatter 的 prev / next 也不再生效（目前沒有文章用到）。
+  route.pagination = paginationWithinGroup(route.sidebar)
 })

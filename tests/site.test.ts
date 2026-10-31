@@ -533,30 +533,72 @@ describe('上一篇 / 下一篇', () => {
   const links = (url: string, rel: 'prev' | 'next') =>
     loadPage(url)
       .querySelectorAll(`a[rel="${rel}"]`)
-      .map((a) => ({ href: a.getAttribute('href'), text: textOf(a) }))
+      .map((a) => ({ href: a.getAttribute('href')!, text: textOf(a) }))
 
-  it('第一篇沒有上一篇，最後一篇沒有下一篇', () => {
-    expect(links(postUrl(posts[0]), 'prev')).toEqual([])
-    expect(links(postUrl(posts.at(-1)!), 'next')).toEqual([])
+  // 有已發布文章的主題，依主題 order；每個主題的篇章依篇章 order（預期值來自 frontmatter 與主題設定）
+  const groups = topics()
+    .map((topic) => ({ topic, posts: posts.filter((p) => p.topic === topic.slug) }))
+    .filter((g) => g.posts.length > 0)
+  const inTopic = groups.flatMap((g) =>
+    g.posts.map((post, i) => [postUrl(post), post, g.posts, i] as const),
+  )
+
+  it('至少有一個主題有已發布文章（避免測試空轉）', () => {
+    expect(groups.length).toBeGreaterThan(0)
+    expect(inTopic.length).toBe(posts.length)
   })
 
-  it.each(posts.map((p, i) => [postUrl(p), i] as const))(
-    '%s 依篇章順序連到前後篇',
-    (url, i) => {
-      for (const [rel, neighbour] of [
-        ['prev', posts[i - 1]],
-        ['next', posts[i + 1]],
-      ] as const) {
-        const found = links(url, rel)
-        if (!neighbour) {
-          expect(found, `${url} 不該有 ${rel}`).toEqual([])
-          continue
-        }
-        expect(found.map((l) => l.href)).toEqual([postUrl(neighbour)])
-        expect(found[0].text).toContain(neighbour.title)
-      }
+  it.each(groups.map((g) => [g.topic.name, g.posts] as const))(
+    '「%s」的第一篇沒有上一篇，最後一篇沒有下一篇',
+    (_name, topicPosts) => {
+      expect(links(postUrl(topicPosts[0]), 'prev')).toEqual([])
+      expect(links(postUrl(topicPosts.at(-1)!), 'next')).toEqual([])
     },
   )
+
+  it.each(inTopic)('%s 依同主題的篇章順序連到前後篇', (url, _post, topicPosts, i) => {
+    for (const [rel, neighbour] of [
+      ['prev', topicPosts[i - 1]],
+      ['next', topicPosts[i + 1]],
+    ] as const) {
+      const found = links(url, rel)
+      if (!neighbour) {
+        expect(found, `${url} 不該有 ${rel}`).toEqual([])
+        continue
+      }
+      expect(found.map((l) => l.href)).toEqual([postUrl(neighbour)])
+      expect(found[0].text).toContain(neighbour.title)
+    }
+  })
+
+  it.each(inTopic)('%s 的上下篇只指向同主題的已發布篇章', (url, post) => {
+    for (const rel of ['prev', 'next'] as const) {
+      for (const { href } of links(url, rel)) {
+        const target = allPosts().find((p) => postUrl(p) === href.split(/[?#]/)[0])
+        expect(target, `${url} 的 ${rel} 連到不是文章的 ${href}`).toBeDefined()
+        expect(target!.draft, `${url} 的 ${rel} 連到草稿 ${href}`).toBe(false)
+        expect(target!.topic, `${url} 的 ${rel} 跨到別的主題 ${href}`).toBe(post.topic)
+      }
+    }
+  })
+
+  it.each(inTopic)('%s 的上下篇和側欄裡同主題群組的前後項相同', (url) => {
+    const sidebar = sidebarGroupsOf(loadPage(url))
+    expect(sidebar, `${url} 沒有標出目前篇章的側欄`).toBeDefined()
+    const group = sidebar!.find((g) => g.links.some((l) => l.current))!
+    const i = group.links.findIndex((l) => l.current)
+    expect(links(url, 'prev').map((l) => l.href)).toEqual(
+      group.links.slice(Math.max(i - 1, 0), i).map((l) => l.href),
+    )
+    expect(links(url, 'next').map((l) => l.href)).toEqual(
+      group.links.slice(i + 1, i + 2).map((l) => l.href),
+    )
+  })
+
+  it.each(['/', '/404.html'])('%s 沒有上一篇 / 下一篇', (url) => {
+    expect(links(url, 'prev')).toEqual([])
+    expect(links(url, 'next')).toEqual([])
+  })
 })
 
 describe('深淺色主題', () => {
