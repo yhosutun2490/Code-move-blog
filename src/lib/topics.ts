@@ -24,6 +24,14 @@ export const TOPICS = [
       '從最基本的 getter / setter 開始，一步一步疊出依賴追蹤、computed、action 與 observer。每篇都有程式碼動畫和可以直接玩的 demo。',
     order: 1,
   },
+  // 測試夾具：只含草稿的主題（src/content/docs/draft-topic/），永遠不該出現在網站上。
+  // 用來驗證空主題不出現、非 MobX 主題的草稿全站隱藏，並證明測試掃到 mobx 以外的主題。請不要刪除。
+  {
+    slug: 'draft-topic',
+    name: '草稿測試主題（永遠不該出現在網站上）',
+    description: '只含草稿的測試用主題，用來確認沒有已發布文章的主題不會出現在側欄和首頁。',
+    order: 99,
+  },
 ] as const satisfies readonly TopicConfig[]
 
 /** 已登記的主題 slug（字面值聯集） */

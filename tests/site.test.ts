@@ -435,6 +435,12 @@ describe('草稿在全站隱藏', () => {
     expect(drafts.length).toBeGreaterThan(0)
   })
 
+  // 只含草稿的測試用主題夾具在這裡派上用場：只掃到單一主題資料夾時這項會失敗，
+  // 證明依文章清單展開的檢查（網址、側欄、搜尋、草稿）真的涵蓋了其他主題。
+  it('測試工具掃到不只一個主題的篇章（避免只掃 mobx 而空轉）', () => {
+    expect(new Set(allPosts().map((p) => p.topic)).size).toBeGreaterThan(1)
+  })
+
   it.each(drafts.map((p) => [postUrl(p), p] as const))(
     '%s 沒有頁面，任何頁面（側欄、首頁、上下篇）都不連到它',
     (url) => {
@@ -470,6 +476,54 @@ describe('草稿在全站隱藏', () => {
         for (const heading of sectionHeadings(draft)) {
           expect(record.content, record.url).not.toContain(heading)
         }
+      }
+    },
+  )
+})
+
+describe('只含草稿的主題不出現', () => {
+  // 有篇章、但全部都是草稿的主題（例如測試用的 draft-topic 夾具）
+  const draftOnlyTopics = topics().filter((topic) => {
+    const ofTopic = allPosts().filter((p) => p.topic === topic.slug)
+    return ofTopic.length > 0 && ofTopic.every((p) => p.draft)
+  })
+  const htmlPages = distFiles().filter((f) => f.endsWith('.html'))
+
+  it('至少有一個只含草稿的主題（避免測試空轉）', () => {
+    expect(draftOnlyTopics.length).toBeGreaterThan(0)
+  })
+
+  it.each(draftOnlyTopics.map((t) => [t.slug, t] as const))(
+    '%s 的主題名稱與簡介不出現在任何頁面上（側欄、首頁、eyebrow）',
+    (_slug, topic) => {
+      expect(htmlPages.length).toBeGreaterThan(0)
+      for (const file of htmlPages) {
+        const text = textOf(loadPage(`/${file}`))
+        expect(text.includes(topic.name), `${file} 出現「${topic.name}」`).toBe(false)
+        expect(text.includes(topic.description), `${file} 出現主題簡介`).toBe(false)
+      }
+    },
+  )
+
+  it.each(draftOnlyTopics.map((t) => [t.slug, t] as const))(
+    '首頁沒有 %s 的名稱、簡介或篇章連結',
+    (slug, topic) => {
+      const home = loadPage('/')
+      expect(textOf(home)).not.toContain(topic.name)
+      expect(textOf(home)).not.toContain(topic.description)
+      const links = home.querySelectorAll('a[href]').map((a) => a.getAttribute('href')!)
+      expect(links.filter((href) => href.startsWith(`/${slug}/`))).toEqual([])
+    },
+  )
+
+  it.each(draftOnlyTopics.map((t) => [t.slug, t] as const))(
+    '%s 的主題名稱與簡介不在搜尋索引裡',
+    (_slug, topic) => {
+      const index = searchIndex()
+      expect(index.length, '搜尋索引是空的').toBeGreaterThan(0)
+      for (const record of index) {
+        expect(record.content, record.url).not.toContain(topic.name)
+        expect(record.content, record.url).not.toContain(topic.description)
       }
     },
   )
