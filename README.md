@@ -51,13 +51,16 @@ src/
 │   ├── MagicStepper.tsx       # React island：上一步／下一步 + 動畫
 │   └── starlight/             # 覆寫 Starlight 元件
 │       ├── PageTitle.astro    # 標題區：eyebrow（文章頁：<主題名稱> · 第 N 篇 / 共 M 篇；首頁：網站設定的封面 eyebrow）+ 標題 + 導言
-│       ├── SiteTitle.astro    # 頁首字標 mobx/motion
+│       ├── SiteTitle.astro    # 頁首字標「前段/後段」（字樣來自網站設定 site-config.ts，斜線用強調色）
 │       └── Footer.astro       # 上下篇之後加上打造說明
 ├── lib/
 │   ├── highlighter.ts         # 共用 Shiki highlighter 與 CODE_THEME
 │   ├── code-blocks.ts         # 一般程式碼區塊（Expressive Code）設定
+│   ├── site-config.ts         # 網站設定：站名、頁首字標、首頁封面、頁尾打造說明（純資料，Astro 設定、元件、測試共用）
 │   ├── topics.ts              # 主題設定：每個主題的 slug、名稱、簡介、排序（純資料，Astro 設定、元件、測試共用）
-│   └── series.ts              # 以主題為單位的篇章查詢（不含草稿、依 order 排序）
+│   ├── content-layout.ts      # 內容目錄檢查（載入 Astro 設定時執行）：資料夾都要登記成主題、篇章都要在子資料夾裡
+│   ├── series.ts              # 以主題為單位的篇章查詢（不含草稿、依 order 排序）
+│   └── pagination.ts          # 上一篇 / 下一篇：只在目前主題的側欄群組內串連（routeData.ts 用）
 ├── pages/index.astro          # 首頁：側欄 + 網站封面 + 依主題分區的篇章列表（列表由 series.ts 的 publishedTopics 產生）
 └── styles/
     ├── theme.css              # 字體、顏色 token、版心寬度的唯一來源，含 Starlight --sl-* 對應
@@ -65,6 +68,8 @@ src/
 tests/                         # npm test：檢查 build 出來的 dist/
 ├── site.test.ts               # 網址、封面、側欄、目錄、搜尋、草稿、繁中介面、主題、字體
 ├── code-blocks.test.ts        # 一般程式碼區塊和程式碼動畫的外框、字體、配色一致
+├── pagination.test.ts         # 上下篇不跨主題（刻意例外：直接測純函式，見設計備註）
+├── content-layout.test.ts     # 內容目錄檢查讓 build 失敗的情況（刻意例外：直接測檢查函式，見設計備註）
 └── site.ts / code-blocks.ts   # 讀 dist 的觀察工具
 e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
 ├── magic-steps.spec.ts        # 程式碼動畫
@@ -72,15 +77,20 @@ e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
 ├── theme.spec.ts              # 主題切換與保留
 ├── mobile.spec.ts             # 手機版面、首頁與文章頁的側欄選單
 ├── home.spec.ts               # 大螢幕首頁：側欄在內容區左邊、搜尋入口可見
-└── helpers.ts                 # 測試用文章（第一個主題的第一篇已發布文章，從原始碼讀出）等共用工具
+└── helpers.ts                 # 測試用文章等共用工具：通用測試用「第一個主題的第一篇」（從原始碼讀出），
+                               # 程式碼動畫和 demo 的測試明確指定 mobx/01-getter-setter（驗的是那篇特有的內容）
 ```
 
 ## 新增一篇文章
 
 文章放在所屬主題的資料夾裡：`src/content/docs/<主題>/<篇章資料夾>/index.mdx`，網址是 `/<主題>/<篇章資料夾>/`。
 
+篇章**一定要放在自己的子資料夾裡**。直接放在主題資料夾底下的 `.md` / `.mdx`（例如 `src/content/docs/mobx/index.mdx`、`mobx/intro.md`）
+會被 Starlight 當成頁面放進側欄，卻不算篇章（首頁列表、「第 N 篇」都看不到它），所以 `npm run build` 會直接失敗，錯誤訊息會列出這些檔案。
+
 1. 複製一篇現有文章（例如 `src/content/docs/mobx/01-getter-setter/`）到同主題底下的新資料夾，例如 `src/content/docs/mobx/02-proxy/`
-2. 改 `index.mdx` 的 frontmatter（`title`、`description`、`order` 都必填，少了 build 會失敗）。`order` 是**主題內**的順序，同時決定首頁、側欄和上下篇的順序；不同主題可以各自從 1 開始
+2. 改 `index.mdx` 的 frontmatter（`title`、`description`、`order` 都必填，少了 build 會失敗）。`order` 是**主題內**的順序，同時決定首頁、側欄和上下篇的順序；不同主題可以各自從 1 開始。
+   Starlight 的 frontmatter `prev` / `next` **不會生效**：上一篇 / 下一篇一律依同主題內的 `order` 串連（由 `src/routeData.ts` 覆寫），要調整請改 `order`
 3. 在 `demos/steps/` 放每一步的程式碼，`steps.ts` 寫標題和說明
 4. 文章裡用 `<MagicSteps steps={steps} />` 放動畫，互動 demo 用 `client:visible` 載入，外面包 `<div class="not-content">`，避免套到文章排版樣式
 
@@ -94,7 +104,7 @@ e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
 2. 在 `src/lib/topics.ts` 的 `TOPICS` 登記一筆：`slug`（和資料夾同名）、`name`（顯示名稱）、`description`（主題簡介）、`order`（主題之間的排序）
 3. 放第一篇文章：`src/content/docs/<主題 slug>/01-xxx/index.mdx`，照「新增一篇文章」的步驟
 
-`src/content/docs/` 底下有沒登記的資料夾時，`npm run build` 會直接失敗，錯誤訊息會列出資料夾名稱。登記了但還沒有資料夾的主題不會報錯。
+`src/content/docs/` 底下有沒登記的資料夾時，`npm run build` 會直接失敗，錯誤訊息會列出資料夾名稱（檢查在 `src/lib/content-layout.ts`）。登記了但還沒有資料夾的主題不會報錯。
 
 ### 草稿
 
@@ -136,4 +146,9 @@ e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
   標題的 Noto Serif TC 用字少、只在大標用到兩個字重，連續看兩頁時可變字體較小，就留著可變字體。
   代價是 render-blocking CSS 變大：全站 CSS gzip 後從約 105 KB 變成約 223 KB（靜態字重每個字重都要一整組 `@font-face`）。
   字型檔本身用 `font-display: swap`，不會擋住畫面。
+- **測試只看 build 產出，有兩個刻意的例外**：`tests/` 的測試原則上只觀察 `npm run build` 產出的 `dist/`（預期值來自原始碼和設定），不碰內部實作。
+  - `tests/pagination.test.ts` 直接測上下篇的純函式（`src/lib/pagination.ts`）。現在只有一個已發布的主題，build 產出裡看不到「跨主題」的情況，
+    觀察 `dist/` 證明不了上下篇不會跨過主題邊界，所以直接餵多個主題群組的側欄。之後有第二個已發布主題時，`site.test.ts` 的上下篇測試也會涵蓋到。
+  - `tests/content-layout.test.ts` 直接測內容目錄檢查（`src/lib/content-layout.ts`）。它負責讓 build 失敗，失敗時沒有 `dist/` 可看，
+    也不能在真的內容目錄裡放壞掉的檔案，所以對暫存的內容目錄呼叫同一個檢查。
 - **之後要部署到 Void / Cloudflare**：目前是純靜態輸出，在 `astro.config.mjs` 加 adapter 即可。

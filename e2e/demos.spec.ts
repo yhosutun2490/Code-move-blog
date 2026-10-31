@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { POST, hydrated } from './helpers'
+import { GETTER_SETTER_POST, hydrated } from './helpers'
 
 /** 文章裡標著 tag（「手寫版」/「MobX 版」）的那個 demo */
 async function demo(page: Page, tag: string): Promise<Locator> {
@@ -12,7 +12,7 @@ function card(demo: Locator, label: string): Locator {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto(POST)
+  await page.goto(GETTER_SETTER_POST)
 })
 
 test('手寫版：改 qty 會重算總計，改 note 不會觸發 autorun', async ({ page }) => {

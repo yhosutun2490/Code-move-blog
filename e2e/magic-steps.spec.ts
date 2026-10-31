@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { POST, hydrated, stepper } from './helpers'
+import { GETTER_SETTER_POST, hydrated, stepper } from './helpers'
 
 test.describe('程式碼動畫', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(POST)
+    await page.goto(GETTER_SETTER_POST)
     await hydrated(stepper(page))
   })
 

@@ -7,6 +7,7 @@ import {
   distFileFor,
   distFiles,
   fontFacesIn,
+  groupByTopic,
   isCrossOrigin,
   islandsOf,
   loadPage,
@@ -20,13 +21,13 @@ import {
   sidebarOf,
   siteConfig,
   siteUiStrings,
+  sortedTopics,
   starlightUiStrings,
   stylesheetsOf,
   textOf,
   tocOf,
+  topicConfig,
   topicDirs,
-  topicOf,
-  topics,
 } from './site'
 
 const posts = publishedPosts()
@@ -153,9 +154,7 @@ describe('首頁是網站封面', () => {
 describe('首頁依主題分區的篇章列表', () => {
   const home = loadPage('/')
   // 有已發布文章的主題，依主題 order；每個主題的篇章依篇章 order
-  const groups = topics()
-    .map((topic) => ({ topic, posts: posts.filter((p) => p.topic === topic.slug) }))
-    .filter((g) => g.posts.length > 0)
+  const groups = groupByTopic(posts)
 
   // 主題分區 = 以標題命名（aria-labelledby）的 <section>，名稱就是那個標題的文字
   const sections = home.querySelectorAll('main section[aria-labelledby]').map((section) => {
@@ -199,7 +198,7 @@ describe('首頁依主題分區的篇章列表', () => {
   it.each(posts.map((p) => [postUrl(p), p] as const))(
     '%s 的項目有兩位數編號、標題與簡介',
     (url, post) => {
-      const entry = entriesOf(sectionOf(topicOf(post.topic).name)!.section).find(
+      const entry = entriesOf(sectionOf(topicConfig(post.topic).name)!.section).find(
         (e) => e.href === url,
       )!
       const number = String(post.order).padStart(2, '0')
@@ -281,7 +280,7 @@ describe('系列辨識元素', () => {
       const above = titleOf(url).previousElementSibling
       const total = posts.filter((p) => p.topic === post.topic).length
       expect(above && textOf(above)).toBe(
-        `${topicOf(post.topic).name} · 第 ${post.order} 篇 / 共 ${total} 篇`,
+        `${topicConfig(post.topic).name} · 第 ${post.order} 篇 / 共 ${total} 篇`,
       )
       expect(above?.classList.contains('eyebrow')).toBe(true)
     },
@@ -334,9 +333,7 @@ describe('系列辨識元素', () => {
 
 describe('文章頁側欄', () => {
   // 有已發布文章的主題，依主題 order；每個主題的篇章依篇章 order
-  const groups = topics()
-    .map((topic) => ({ topic, posts: posts.filter((p) => p.topic === topic.slug) }))
-    .filter((g) => g.posts.length > 0)
+  const groups = groupByTopic(posts)
 
   it('至少有一個主題有已發布文章（避免測試空轉）', () => {
     expect(groups.length).toBeGreaterThan(0)
@@ -539,7 +536,7 @@ describe('草稿在全站隱藏', () => {
 
 describe('只含草稿的主題不出現', () => {
   // 有篇章、但全部都是草稿的主題（例如測試用的 draft-topic 夾具）
-  const draftOnlyTopics = topics().filter((topic) => {
+  const draftOnlyTopics = sortedTopics().filter((topic) => {
     const ofTopic = allPosts().filter((p) => p.topic === topic.slug)
     return ofTopic.length > 0 && ofTopic.every((p) => p.draft)
   })
@@ -561,13 +558,11 @@ describe('只含草稿的主題不出現', () => {
     },
   )
 
+  // 名稱與簡介已由上一項涵蓋（含首頁），這裡只看連結
   it.each(draftOnlyTopics.map((t) => [t.slug, t] as const))(
-    '首頁沒有 %s 的名稱、簡介或篇章連結',
-    (slug, topic) => {
-      const home = loadPage('/')
-      expect(textOf(home)).not.toContain(topic.name)
-      expect(textOf(home)).not.toContain(topic.description)
-      const links = home.querySelectorAll('a[href]').map((a) => a.getAttribute('href')!)
+    '首頁沒有連到 %s 底下的連結',
+    (slug) => {
+      const links = loadPage('/').querySelectorAll('a[href]').map((a) => a.getAttribute('href')!)
       expect(links.filter((href) => href.startsWith(`/${slug}/`))).toEqual([])
     },
   )
@@ -592,9 +587,7 @@ describe('上一篇 / 下一篇', () => {
       .map((a) => ({ href: a.getAttribute('href')!, text: textOf(a) }))
 
   // 有已發布文章的主題，依主題 order；每個主題的篇章依篇章 order（預期值來自 frontmatter 與主題設定）
-  const groups = topics()
-    .map((topic) => ({ topic, posts: posts.filter((p) => p.topic === topic.slug) }))
-    .filter((g) => g.posts.length > 0)
+  const groups = groupByTopic(posts)
   const inTopic = groups.flatMap((g) =>
     g.posts.map((post, i) => [postUrl(post), post, g.posts, i] as const),
   )
