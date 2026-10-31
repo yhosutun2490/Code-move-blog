@@ -17,6 +17,7 @@ import {
   sectionHeadings,
   sidebarGroupsOf,
   sidebarOf,
+  siteConfig,
   siteUiStrings,
   starlightUiStrings,
   stylesheetsOf,
@@ -95,11 +96,9 @@ describe('純靜態輸出', () => {
 })
 
 describe('首頁是系列封面', () => {
-  const COVER_TITLE = '把 MobX 拆開來看'
-  const COVER_LEDE =
-    '從最基本的 getter / setter 開始，一步一步疊出依賴追蹤、computed、action 與 observer。每篇都有程式碼動畫和可以直接玩的 demo。'
+  const { title: COVER_TITLE, lede: COVER_LEDE, eyebrow: COVER_EYEBROW } = siteConfig.cover
 
-  it('標題是封面標題，緊接著以導言樣式顯示導言', () => {
+  it('標題是網站設定的封面標題，緊接著以導言樣式顯示導言', () => {
     const h1 = loadPage('/').querySelector('h1')!
     expect(textOf(h1)).toBe(COVER_TITLE)
     const below = h1.nextElementSibling
@@ -107,9 +106,9 @@ describe('首頁是系列封面', () => {
     expect(below?.classList.contains('lede')).toBe(true)
   })
 
-  it('標題上方以 eyebrow 樣式寫著「自我學習系列」', () => {
+  it('標題上方以 eyebrow 樣式顯示網站設定的封面 eyebrow', () => {
     const above = loadPage('/').querySelector('h1')!.previousElementSibling
-    expect(above && textOf(above)).toBe('自我學習系列')
+    expect(above && textOf(above)).toBe(COVER_EYEBROW)
     expect(above?.classList.contains('eyebrow')).toBe(true)
   })
 
@@ -143,9 +142,9 @@ describe('首頁是系列封面', () => {
     expect(header!.toString()).toBe(headerOf(postUrl(posts[0]))!.toString())
   })
 
-  it('瀏覽器分頁標題與摘要是封面標題與導言', () => {
+  it('瀏覽器分頁標題是「封面標題 | 站名」，摘要是封面導言', () => {
     const head = loadPage('/').querySelector('head')!
-    expect(textOf(head.querySelector('title')!)).toBe(`${COVER_TITLE} | mobx/motion`)
+    expect(textOf(head.querySelector('title')!)).toBe(`${COVER_TITLE} | ${siteConfig.name}`)
     expect(head.querySelector('meta[name="description"]')?.getAttribute('content')).toBe(COVER_LEDE)
   })
 })
@@ -269,24 +268,25 @@ describe('系列辨識元素', () => {
   )
 
   it.each(['/', ...posts.map(postUrl), '/404.html'])(
-    '%s 的頁首有 mobx/motion 字標，斜線單獨上色，連到首頁',
+    '%s 的頁首有網站設定的字標，斜線單獨上色，連到首頁',
     (url) => {
+      const { before, after } = siteConfig.mark
       const mark = loadPage(url)
         .querySelectorAll('header a[href="/"]')
-        .find((a) => textOf(a) === 'mobx/motion')
+        .find((a) => textOf(a) === `${before}/${after}`)
       expect(mark, `${url} 頁首沒有連到首頁的字標`).toBeDefined()
-      // 斜線包在自己的元素裡，才能用 MobX 橘上色
+      // 斜線包在自己的元素裡，才能單獨上色
       expect(mark!.querySelectorAll('*').map(textOf)).toContain('/')
     },
   )
 
   it.each(['/', ...posts.map(postUrl), '/404.html'])(
-    '%s 的頁尾寫著打造說明，在內文之後',
+    '%s 的頁尾寫著網站設定的打造說明，在內文之後',
     (url) => {
       const page = loadPage(url)
       const credit = page
         .querySelectorAll('main p')
-        .find((p) => textOf(p) === '用 Astro、shiki-magic-move 與 MobX 打造')
+        .find((p) => textOf(p) === siteConfig.credit)
       expect(credit, `${url} 沒有打造說明`).toBeDefined()
       // 在頁面最下方：內文（以及上一篇 / 下一篇）都在它之前
       const html = page.toString()

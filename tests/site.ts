@@ -14,6 +14,12 @@ import { parse as parseHtml, type HTMLElement } from 'node-html-parser'
 import { parse as parseYaml } from 'yaml'
 import { TOPICS, type TopicConfig } from '../src/lib/topics'
 
+/**
+ * 網站設定（站名、字標、首頁封面、頁尾打造說明）：和網站讀同一份模組，
+ * 測試的預期值從這裡來，換站名時測試不用跟著改。
+ */
+export { siteConfig } from '../src/lib/site-config'
+
 export const ROOT = resolve(import.meta.dirname, '..')
 export const DIST = join(ROOT, 'dist')
 const CONTENT = join(ROOT, 'src/content')

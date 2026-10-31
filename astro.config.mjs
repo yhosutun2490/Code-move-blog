@@ -4,6 +4,7 @@ import starlight from '@astrojs/starlight'
 import react from '@astrojs/react'
 import { readdirSync } from 'node:fs'
 import { expressiveCode } from './src/lib/code-blocks'
+import { siteConfig } from './src/lib/site-config'
 import { assertTopicFoldersRegistered, sortedTopics } from './src/lib/topics'
 
 // 主題 = src/content/docs/ 底下的頂層資料夾。沒登記在主題設定的資料夾讓 build 直接失敗。
@@ -20,7 +21,8 @@ assertTopicFoldersRegistered(
 export default defineConfig({
   integrations: [
     starlight({
-      title: 'mobx/motion',
+      // 站名來自網站設定（也是瀏覽器分頁標題的後綴）
+      title: siteConfig.name,
       // 單一語系。zh-Hant-TW 對不到 Starlight 內建的 zh-TW 翻譯，
       // 介面字串由 src/content/i18n/zh-Hant-TW.json 提供。
       locales: { root: { label: '繁體中文', lang: 'zh-Hant-TW' } },
