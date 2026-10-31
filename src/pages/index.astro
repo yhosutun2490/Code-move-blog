@@ -1,12 +1,12 @@
 ---
 // StarlightPage 必須是第一個 import（Starlight 依此決定 CSS layer 順序）
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro'
-import { publishedSeriesPosts } from '../lib/series'
+import { publishedTopics } from '../lib/series'
 import { siteConfig } from '../lib/site-config'
 
 // 系列封面：eyebrow、標題與導言由 PageTitle 依 frontmatter 畫（和文章頁的標題區同一套），
-// 這裡只負責篇章列表。依篇章順序，不含草稿。
-const posts = await publishedSeriesPosts()
+// 這裡只負責篇章列表：依主題 order、再依篇章 order 排成一欄，不含草稿。
+const posts = (await publishedTopics()).flatMap(({ posts }) => posts)
 
 // StarlightPage 會用 docs 集合的 schema 驗證 frontmatter，所以 description、order 都要給。
 // 封面標題與導言來自網站設定；description 就是封面導言，也是 <meta name="description">。
