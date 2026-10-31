@@ -45,7 +45,7 @@
 .series {
   list-style: none;
   padding: 0;
-  margin: 0; /* 上方已有標題區的分隔線 */
+  margin: 0; /* 緊接在主題簡介下方，和簡介的間距由第一項的 padding-top 決定 */
 }
 
 .series li:first-child a {

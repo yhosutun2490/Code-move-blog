@@ -12,7 +12,13 @@ import { pathToFileURL } from 'node:url'
 import { gunzipSync } from 'node:zlib'
 import { parse as parseHtml, type HTMLElement } from 'node-html-parser'
 import { parse as parseYaml } from 'yaml'
-import { TOPICS, type TopicConfig } from '../src/lib/topics'
+import {
+  isTopicSlug,
+  sortedTopics,
+  topicConfig,
+  type TopicConfig,
+  type TopicSlug,
+} from '../src/lib/topics'
 
 /**
  * 網站設定（站名、字標、首頁封面、頁尾打造說明）：和網站讀同一份模組，
@@ -28,7 +34,7 @@ const DOCS = join(CONTENT, 'docs')
 
 export interface Post {
   /** 所屬主題：docs 底下的頂層資料夾名稱，也是網址的第一段 */
-  topic: string
+  topic: TopicSlug
   /** 篇章資料夾名稱，也是網址的第二段：/<topic>/<folder>/ */
   folder: string
   title: string
@@ -39,16 +45,8 @@ export interface Post {
   body: string
 }
 
-/** 主題設定（依主題 order 排序） */
-export function topics(): TopicConfig[] {
-  return [...TOPICS].sort((a, b) => a.order - b.order)
-}
-
-export function topicOf(slug: string): TopicConfig {
-  const topic = TOPICS.find((t) => t.slug === slug)
-  if (!topic) throw new Error(`主題 ${slug} 沒有登記在主題設定`)
-  return topic
-}
+/** 主題設定（和網站讀同一份）：依主題 order 排序的主題、由 slug 取設定 */
+export { sortedTopics, topicConfig }
 
 /** docs 底下的頂層資料夾，也就是內容裡實際存在的主題 */
 export function topicDirs(): string[] {
@@ -59,6 +57,8 @@ export function topicDirs(): string[] {
 export function allPosts(): Post[] {
   const posts: Post[] = []
   for (const topic of topicDirs()) {
+    // 沒登記的資料夾 build 就會失敗（見 src/lib/content-layout.ts），這裡只是讓型別收斂成 TopicSlug
+    if (!isTopicSlug(topic)) throw new Error(`主題資料夾 ${topic} 沒有登記在主題設定`)
     for (const folder of readdirSync(join(DOCS, topic))) {
       const file = ['index.mdx', 'index.md']
         .map((f) => join(DOCS, topic, folder, f))
@@ -80,13 +80,29 @@ export function allPosts(): Post[] {
     }
   }
   return posts.sort(
-    (a, b) => topicOf(a.topic).order - topicOf(b.topic).order || a.order - b.order,
+    (a, b) => topicConfig(a.topic).order - topicConfig(b.topic).order || a.order - b.order,
   )
 }
 
 /** 讀者看得到的篇章：非草稿，依主題 order、再依篇章 order 排序 */
 export function publishedPosts(): Post[] {
   return allPosts().filter((p) => !p.draft)
+}
+
+export interface TopicGroup {
+  topic: TopicConfig
+  /** 這個主題的篇章（依篇章 order，保留傳入的順序） */
+  posts: Post[]
+}
+
+/**
+ * 依主題 order 把篇章分組，只留下有篇章的主題。
+ * 傳入已發布篇章時，就是讀者在側欄、首頁看到的主題群組。
+ */
+export function groupByTopic(posts: readonly Post[]): TopicGroup[] {
+  return sortedTopics()
+    .map((topic) => ({ topic, posts: posts.filter((p) => p.topic === topic.slug) }))
+    .filter((group) => group.posts.length > 0)
 }
 
 export function postUrl(post: Pick<Post, 'topic' | 'folder'>): string {

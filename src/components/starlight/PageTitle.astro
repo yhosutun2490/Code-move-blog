@@ -7,8 +7,8 @@ import { siteConfig } from '../../lib/site-config'
 import { topicConfig } from '../../lib/topics'
 
 const { entry } = Astro.locals.starlightRoute
+// 文章頁才有主題（首頁、404 是 undefined）
 const topic = topicOfPost(entry.id)
-const isPost = topic !== undefined
 const isHome = entry.id === ''
 // M 只算同主題、已發布的篇章
 const total = topic ? (await publishedPostsOf(topic)).length : 0
@@ -17,4 +17,4 @@ const total = topic ? (await publishedPostsOf(topic)).length : 0
 {topic && <p class="eyebrow">{topicConfig(topic).name} · 第 {entry.data.order} 篇 / 共 {total} 篇</p>}
 {isHome && <p class="eyebrow">{siteConfig.cover.eyebrow}</p>}
 <Default />
-{(isPost || isHome) && <p class="lede">{entry.data.description}</p>}
+{(topic || isHome) && <p class="lede">{entry.data.description}</p>}
