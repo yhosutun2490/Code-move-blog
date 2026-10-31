@@ -15,19 +15,23 @@ import {
   resourceUrlsOf,
   searchIndex,
   sectionHeadings,
+  sidebarGroupsOf,
   sidebarOf,
   siteUiStrings,
   starlightUiStrings,
   stylesheetsOf,
   textOf,
   tocOf,
+  topicDirs,
+  topicOf,
+  topics,
 } from './site'
 
 const posts = publishedPosts()
 
 describe('文章網址', () => {
-  it('至少找得到第一篇文章（避免測試空轉）', () => {
-    expect(posts.map((p) => p.folder)).toContain('01-getter-setter')
+  it('至少找得到一篇已發布文章（避免測試空轉）', () => {
+    expect(posts.length).toBeGreaterThan(0)
   })
 
   it.each(posts.map((p) => [postUrl(p), p] as const))(
@@ -48,11 +52,13 @@ describe('文章網址', () => {
 
 describe('純靜態輸出', () => {
   const files = distFiles()
+  // 文章網址在 dist 裡對應的檔案，例如 /<主題>/<資料夾>/ → <主題>/<資料夾>/index.html
+  const htmlFileOf = (post: (typeof posts)[number]) => `${postUrl(post).slice(1)}index.html`
 
   it('首頁與每篇文章都是現成的 HTML 檔', () => {
     expect(files).toContain('index.html')
     for (const post of posts) {
-      expect(files).toContain(`mobx/${post.folder}/index.html`)
+      expect(files).toContain(htmlFileOf(post))
     }
   })
 
@@ -67,8 +73,13 @@ describe('純靜態輸出', () => {
     expect(serverFiles).toEqual([])
   })
 
-  it('demos 資料夾裡的程式檔不會變成頁面', () => {
-    const demoPages = files.filter((f) => /^mobx\/[^/]+\/demos\//.test(f))
+  it('任何主題的 demos 資料夾裡的程式檔都不會變成頁面', () => {
+    const dirs = topicDirs()
+    expect(dirs.length).toBeGreaterThan(0)
+    const demoPages = files.filter((f) => {
+      const [topic, , demos] = f.split('/')
+      return dirs.includes(topic) && demos === 'demos'
+    })
     expect(demoPages).toEqual([])
   })
 
@@ -77,7 +88,7 @@ describe('純靜態輸出', () => {
     const expected = [
       '404.html',
       'index.html',
-      ...posts.map((p) => `mobx/${p.folder}/index.html`),
+      ...posts.map(htmlFileOf),
     ].sort()
     expect(htmlPages).toEqual(expected)
   })
@@ -237,12 +248,14 @@ describe('系列辨識元素', () => {
   const titleOf = (url: string) => loadPage(url).querySelector('h1')!
 
   it.each(posts.map((p) => [postUrl(p), p] as const))(
-    '%s 的標題上方寫著「第 N 篇 / 共 M 篇」',
+    '%s 的標題上方寫著「<主題名稱> · 第 N 篇 / 共 M 篇」，M 只算同主題的已發布篇章',
     (url, post) => {
       const above = titleOf(url).previousElementSibling
+      const total = posts.filter((p) => p.topic === post.topic).length
       expect(above && textOf(above)).toBe(
-        `MobX 拆解 · 第 ${post.order} 篇 / 共 ${posts.length} 篇`,
+        `${topicOf(post.topic).name} · 第 ${post.order} 篇 / 共 ${total} 篇`,
       )
+      expect(above?.classList.contains('eyebrow')).toBe(true)
     },
   )
 
@@ -291,15 +304,36 @@ describe('系列辨識元素', () => {
 })
 
 describe('文章頁側欄', () => {
+  // 有已發布文章的主題，依主題 order；每個主題的篇章依篇章 order
+  const groups = topics()
+    .map((topic) => ({ topic, posts: posts.filter((p) => p.topic === topic.slug) }))
+    .filter((g) => g.posts.length > 0)
+
+  it('至少有一個主題有已發布文章（避免測試空轉）', () => {
+    expect(groups.length).toBeGreaterThan(0)
+  })
+
   it.each(posts.map((p) => [postUrl(p), p] as const))(
-    '%s 的側欄依篇章順序列出所有篇章，並標出目前篇章',
+    '%s 的側欄依主題分組，群組標題是主題名稱，組內依篇章順序，並標出目前篇章',
     (url, post) => {
-      const sidebar = sidebarOf(loadPage(url))
+      const sidebar = sidebarGroupsOf(loadPage(url))
       expect(sidebar, `${url} 沒有標出目前篇章的側欄`).toBeDefined()
-      const entries = sidebar!.filter((l) => l.href.startsWith('/mobx/'))
-      expect(entries.map((l) => l.href)).toEqual(posts.map(postUrl))
-      expect(entries.map((l) => l.text)).toEqual(posts.map((p) => p.title))
-      expect(entries.filter((l) => l.current).map((l) => l.href)).toEqual([postUrl(post)])
+      expect(sidebar!.map((g) => g.label)).toEqual(groups.map((g) => g.topic.name))
+      sidebar!.forEach((group, i) => {
+        expect(group.links.map((l) => l.href)).toEqual(groups[i].posts.map(postUrl))
+        expect(group.links.map((l) => l.text)).toEqual(groups[i].posts.map((p) => p.title))
+      })
+      const current = sidebar!.flatMap((g) => g.links).filter((l) => l.current)
+      expect(current.map((l) => l.href)).toEqual([postUrl(post)])
+    },
+  )
+
+  it.each(posts.map((p) => [postUrl(p), p] as const))(
+    '%s 的側欄沒有群組以外的連結',
+    (url) => {
+      const page = loadPage(url)
+      const grouped = sidebarGroupsOf(page)!.flatMap((g) => g.links.map((l) => l.href))
+      expect(sidebarOf(page)!.map((l) => l.href)).toEqual(grouped)
     },
   )
 })

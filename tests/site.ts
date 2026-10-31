@@ -3,8 +3,8 @@
  * - 文章清單從原始碼的 frontmatter 讀出（作為預期值的來源）
  * - 實際結果一律從 dist/ 的 HTML 與 JS 讀出
  *
- * 文章原始檔目前在 src/content/mobx/，遷移到 Starlight 後會在
- * src/content/docs/mobx/；兩個位置都會被找到，所以測試不用跟著改。
+ * 文章原始檔在 src/content/docs/<主題>/<資料夾>/index.mdx。主題是 docs 底下的頂層資料夾，
+ * 顯示名稱、簡介與排序登記在 src/lib/topics.ts（測試直接匯入同一份設定）。
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -12,13 +12,18 @@ import { pathToFileURL } from 'node:url'
 import { gunzipSync } from 'node:zlib'
 import { parse as parseHtml, type HTMLElement } from 'node-html-parser'
 import { parse as parseYaml } from 'yaml'
+import { TOPICS, type TopicConfig } from '../src/lib/topics'
 
 export const ROOT = resolve(import.meta.dirname, '..')
 export const DIST = join(ROOT, 'dist')
 const CONTENT = join(ROOT, 'src/content')
+/** 文章集合（Starlight docs）；i18n 等其他集合不在這裡 */
+const DOCS = join(CONTENT, 'docs')
 
 export interface Post {
-  /** 篇章資料夾名稱，也是網址的一段：/mobx/<folder>/ */
+  /** 所屬主題：docs 底下的頂層資料夾名稱，也是網址的第一段 */
+  topic: string
+  /** 篇章資料夾名稱，也是網址的第二段：/<topic>/<folder>/ */
   folder: string
   title: string
   description: string
@@ -28,24 +33,29 @@ export interface Post {
   body: string
 }
 
-function findMobxDirs(dir: string): string[] {
-  const found: string[] = []
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name)
-    if (!statSync(full).isDirectory()) continue
-    if (name === 'mobx') found.push(full)
-    else found.push(...findMobxDirs(full))
-  }
-  return found
+/** 主題設定（依主題 order 排序） */
+export function topics(): TopicConfig[] {
+  return [...TOPICS].sort((a, b) => a.order - b.order)
 }
 
-/** 所有篇章（含草稿），依 order 排序 */
+export function topicOf(slug: string): TopicConfig {
+  const topic = TOPICS.find((t) => t.slug === slug)
+  if (!topic) throw new Error(`主題 ${slug} 沒有登記在主題設定`)
+  return topic
+}
+
+/** docs 底下的頂層資料夾，也就是內容裡實際存在的主題 */
+export function topicDirs(): string[] {
+  return readdirSync(DOCS).filter((name) => statSync(join(DOCS, name)).isDirectory())
+}
+
+/** 所有主題的所有篇章（含草稿），依主題 order、再依篇章 order 排序 */
 export function allPosts(): Post[] {
   const posts: Post[] = []
-  for (const mobxDir of findMobxDirs(CONTENT)) {
-    for (const folder of readdirSync(mobxDir)) {
+  for (const topic of topicDirs()) {
+    for (const folder of readdirSync(join(DOCS, topic))) {
       const file = ['index.mdx', 'index.md']
-        .map((f) => join(mobxDir, folder, f))
+        .map((f) => join(DOCS, topic, folder, f))
         .find((f) => existsSync(f))
       if (!file) continue
       const source = readFileSync(file, 'utf8')
@@ -53,6 +63,7 @@ export function allPosts(): Post[] {
       if (!match) throw new Error(`${file} 沒有 frontmatter`)
       const data = parseYaml(match[1])
       posts.push({
+        topic,
         folder,
         title: data.title,
         description: data.description,
@@ -62,16 +73,18 @@ export function allPosts(): Post[] {
       })
     }
   }
-  return posts.sort((a, b) => a.order - b.order)
+  return posts.sort(
+    (a, b) => topicOf(a.topic).order - topicOf(b.topic).order || a.order - b.order,
+  )
 }
 
-/** 讀者看得到的篇章：非草稿，依 order 排序 */
+/** 讀者看得到的篇章：非草稿，依主題 order、再依篇章 order 排序 */
 export function publishedPosts(): Post[] {
   return allPosts().filter((p) => !p.draft)
 }
 
-export function postUrl(post: Pick<Post, 'folder'>): string {
-  return `/mobx/${post.folder}/`
+export function postUrl(post: Pick<Post, 'topic' | 'folder'>): string {
+  return `/${post.topic}/${post.folder}/`
 }
 
 /** 網址對應到 dist 裡的檔案（靜態主機的解析方式） */
@@ -243,6 +256,34 @@ export function sidebarOf(page: HTMLElement): NavLink[] | undefined {
     text: textOf(a),
     current: a.getAttribute('aria-current') === 'page',
   }))
+}
+
+export interface NavGroup {
+  /** 群組標題 */
+  label: string
+  links: NavLink[]
+}
+
+/**
+ * 側欄的頂層群組（可展開收合的 <details>），依畫面上的順序。
+ * 側欄的找法同 sidebarOf；找不到時回傳 undefined。
+ */
+export function sidebarGroupsOf(page: HTMLElement): NavGroup[] | undefined {
+  const nav = page
+    .querySelectorAll('nav')
+    .find((n) => n.querySelector('a[aria-current="page"]'))
+  if (!nav) return undefined
+  return nav
+    .querySelectorAll('details')
+    .filter((d) => !d.parentNode?.closest('details'))
+    .map((d) => ({
+      label: textOf(d.querySelector('summary')!),
+      links: d.querySelectorAll('a[href]').map((a) => ({
+        href: a.getAttribute('href')!,
+        text: textOf(a),
+        current: a.getAttribute('aria-current') === 'page',
+      })),
+    }))
 }
 
 /** 頁面引用的所有外部資源網址（<link href>、<script src>、<img src> 等），原樣回傳 */

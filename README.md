@@ -26,34 +26,36 @@ npx playwright install chromium
 ## 結構
 
 ```
-astro.config.mjs               # Starlight 設定：語系、側欄、customCss、元件覆寫、Expressive Code
+astro.config.mjs               # Starlight 設定：語系、側欄（由主題設定產生）、customCss、元件覆寫、Expressive Code
 vitest.config.ts               # npm test：只跑 tests/**/*.test.ts
 playwright.config.ts           # npm run test:e2e：起 astro preview，跑 e2e/*.spec.ts
 src/
 ├── content.config.ts          # Starlight docs collection：每篇 = 一個資料夾的 index.mdx
-├── routeData.ts               # 把側欄攤平成「MobX 拆解」底下一排篇章
+├── routeData.ts               # 把側欄攤平成每個主題群組底下一排篇章
 ├── content/i18n/zh-Hant-TW.json  # Starlight 介面字串（繁中，見設計備註）
-├── content/docs/mobx/
-│   ├── 01-getter-setter/
-│   │   ├── index.mdx          # 文章本體
-│   │   └── demos/
-│   │       ├── steps/*.js     # magic move 每一步的程式碼（獨立檔，有語法提示）
-│   │       ├── steps.ts       # 步驟標題、說明 + 用 ?raw 匯入程式碼
-│   │       ├── mini-reactive.ts
-│   │       ├── MiniReactiveDemo.tsx
-│   │       └── MobxCartDemo.tsx
-│   └── draft-fixture/index.mdx   # 測試用草稿（見「草稿」），不是文章
+├── content/docs/              # 每個頂層資料夾是一個主題，網址是 /<主題>/<篇章資料夾>/
+│   └── mobx/                  # 主題「MobX 拆解」（登記在 src/lib/topics.ts）
+│       ├── 01-getter-setter/
+│       │   ├── index.mdx      # 文章本體
+│       │   └── demos/
+│       │       ├── steps/*.js # magic move 每一步的程式碼（獨立檔，有語法提示）
+│       │       ├── steps.ts   # 步驟標題、說明 + 用 ?raw 匯入程式碼
+│       │       ├── mini-reactive.ts
+│       │       ├── MiniReactiveDemo.tsx
+│       │       └── MobxCartDemo.tsx
+│       └── draft-fixture/index.mdx   # 測試用草稿（見「草稿」），不是文章
 ├── components/
 │   ├── MagicSteps.astro       # build 時用 Shiki 預編譯 token（client 不載 Shiki）
 │   ├── MagicStepper.tsx       # React island：上一步／下一步 + 動畫
 │   └── starlight/             # 覆寫 Starlight 元件
-│       ├── PageTitle.astro    # 標題區：eyebrow（第 N 篇 / 共 M 篇、自我學習系列）+ 標題 + 導言
+│       ├── PageTitle.astro    # 標題區：eyebrow（<主題名稱> · 第 N 篇 / 共 M 篇、自我學習系列）+ 標題 + 導言
 │       ├── SiteTitle.astro    # 頁首字標 mobx/motion
 │       └── Footer.astro       # 上下篇之後加上打造說明
 ├── lib/
 │   ├── highlighter.ts         # 共用 Shiki highlighter 與 CODE_THEME
 │   ├── code-blocks.ts         # 一般程式碼區塊（Expressive Code）設定
-│   └── series.ts              # 系列篇章查詢（不含草稿、依 order 排序）
+│   ├── topics.ts              # 主題設定：每個主題的 slug、名稱、簡介、排序（純資料，Astro 設定、元件、測試共用）
+│   └── series.ts              # 以主題為單位的篇章查詢（不含草稿、依 order 排序）
 ├── pages/index.astro          # 系列封面與篇章列表（文章頁、側欄、上下篇由 Starlight 產生）
 └── styles/
     ├── theme.css              # 字體、顏色 token、版心寬度的唯一來源，含 Starlight --sl-* 對應
@@ -72,19 +74,31 @@ e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
 
 ## 新增一篇文章
 
-1. 複製 `src/content/docs/mobx/01-getter-setter/` 成新資料夾，例如 `02-proxy/`
-2. 改 `index.mdx` 的 frontmatter（`title`、`description`、`order` 都必填，少了 build 會失敗）。`order` 同時決定首頁、側欄和上下篇的順序
+文章放在所屬主題的資料夾裡：`src/content/docs/<主題>/<篇章資料夾>/index.mdx`，網址是 `/<主題>/<篇章資料夾>/`。
+
+1. 複製一篇現有文章（例如 `src/content/docs/mobx/01-getter-setter/`）到同主題底下的新資料夾，例如 `src/content/docs/mobx/02-proxy/`
+2. 改 `index.mdx` 的 frontmatter（`title`、`description`、`order` 都必填，少了 build 會失敗）。`order` 是**主題內**的順序，同時決定首頁、側欄和上下篇的順序；不同主題可以各自從 1 開始
 3. 在 `demos/steps/` 放每一步的程式碼，`steps.ts` 寫標題和說明
 4. 文章裡用 `<MagicSteps steps={steps} />` 放動畫，互動 demo 用 `client:visible` 載入，外面包 `<div class="not-content">`，避免套到文章排版樣式
 
 `demos/` 裡的 `.md` / `.mdx` 會被 Starlight 當成頁面；說明檔請用底線開頭（例如 `_README.md`）。
+
+## 新增一個主題
+
+主題是 `src/content/docs/` 底下的一個頂層資料夾。側欄群組、文章 eyebrow 的名稱都來自主題設定，元件和測試都不用改。
+
+1. 開資料夾：`src/content/docs/<主題 slug>/`（slug 會是網址的第一段，例如 `src/content/docs/react/` → `/react/...`）
+2. 在 `src/lib/topics.ts` 的 `TOPICS` 登記一筆：`slug`（和資料夾同名）、`name`（顯示名稱）、`description`（主題簡介）、`order`（主題之間的排序）
+3. 放第一篇文章：`src/content/docs/<主題 slug>/01-xxx/index.mdx`，照「新增一篇文章」的步驟
+
+`src/content/docs/` 底下有沒登記的資料夾時，`npm run build` 會直接失敗，錯誤訊息會列出資料夾名稱。登記了但還沒有資料夾的主題不會報錯。
 
 ### 草稿
 
 草稿可以在 frontmatter 加 `draft: true`。`npm run build` 出來的網站裡，草稿沒有頁面，也不會出現在首頁列表、側欄、上下篇和搜尋裡。
 `npm run dev` 時 Starlight 會照樣顯示草稿（頁面上方有草稿提示），方便預覽，這是正常的。
 
-自己用 `getCollection` 查文章時，Starlight 不會幫你濾掉草稿，請用 `src/lib/series.ts` 的 `publishedSeriesPosts()`。
+自己用 `getCollection` 查文章時，Starlight 不會幫你濾掉草稿，請用 `src/lib/series.ts` 的 `publishedPostsOf(主題)`（某主題的已發布篇章）或 `publishedTopics()`（有已發布文章的主題，各附篇章）。
 
 `src/content/docs/mobx/draft-fixture/` 是**測試用的草稿**：`npm test` 會確認它的標題、簡介和小節標題不出現在任何頁面或搜尋索引裡。
 請不要刪掉它、不要把它改成 `draft: false`，也不要把它的文字用在別的地方（否則測試會失敗）。開發時在 `astro dev` 的側欄看到它是預期中的。

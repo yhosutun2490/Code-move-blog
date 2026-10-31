@@ -3,7 +3,7 @@ import { defineRouteMiddleware, type StarlightRouteData } from '@astrojs/starlig
 type Entry = StarlightRouteData['sidebar'][number]
 
 // 每篇是 <資料夾>/index.mdx，autogenerate 會替每篇包一個「只含一個連結的群組」。
-// 把這種群組攤平成單一連結，側欄就是「MobX 拆解」底下一排篇章。
+// 把這種群組攤平成單一連結，側欄就是每個主題群組底下一排篇章。
 const unwrapSingleLinkGroups = (entries: Entry[]): Entry[] =>
   entries.map((entry) => {
     if (entry.type !== 'group') return entry

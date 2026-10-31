@@ -1,16 +1,19 @@
 ---
-// 標題區：文章頁是「第 N 篇 / 共 M 篇」+ 標題 + 導言（frontmatter description）；
+// 標題區：文章頁是「<主題名稱> · 第 N 篇 / 共 M 篇」+ 標題 + 導言（frontmatter description）；
 // 首頁（StarlightPage，entry.id 是 ''）是系列封面：「自我學習系列」+ 標題 + 導言。
 import Default from '@astrojs/starlight/components/PageTitle.astro'
-import { isSeriesPost, publishedSeriesPosts } from '../../lib/series'
+import { publishedPostsOf, topicOfPost } from '../../lib/series'
+import { topicConfig } from '../../lib/topics'
 
 const { entry } = Astro.locals.starlightRoute
-const isPost = isSeriesPost(entry.id)
+const topic = topicOfPost(entry.id)
+const isPost = topic !== undefined
 const isHome = entry.id === ''
-const total = isPost ? (await publishedSeriesPosts()).length : 0
+// M 只算同主題、已發布的篇章
+const total = topic ? (await publishedPostsOf(topic)).length : 0
 ---
 
-{isPost && <p class="eyebrow">MobX 拆解 · 第 {entry.data.order} 篇 / 共 {total} 篇</p>}
+{topic && <p class="eyebrow">{topicConfig(topic).name} · 第 {entry.data.order} 篇 / 共 {total} 篇</p>}
 {isHome && <p class="eyebrow">自我學習系列</p>}
 <Default />
 {(isPost || isHome) && <p class="lede">{entry.data.description}</p>}
