@@ -3,8 +3,8 @@
  * - 文章清單從原始碼的 frontmatter 讀出（作為預期值的來源）
  * - 實際結果一律從 dist/ 的 HTML 與 JS 讀出
  *
- * 文章原始檔目前在 src/content/mobx/，遷移到 Starlight 後會在
- * src/content/docs/mobx/；兩個位置都會被找到，所以測試不用跟著改。
+ * 文章原始檔在 src/content/docs/<主題>/<資料夾>/index.mdx。主題是 docs 底下的頂層資料夾，
+ * 顯示名稱、簡介與排序登記在 src/lib/topics.ts（測試直接匯入同一份設定）。
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -12,13 +12,30 @@ import { pathToFileURL } from 'node:url'
 import { gunzipSync } from 'node:zlib'
 import { parse as parseHtml, type HTMLElement } from 'node-html-parser'
 import { parse as parseYaml } from 'yaml'
+import {
+  isTopicSlug,
+  sortedTopics,
+  topicConfig,
+  type TopicConfig,
+  type TopicSlug,
+} from '../src/lib/topics'
+
+/**
+ * 網站設定（站名、字標、首頁封面、頁尾打造說明）：和網站讀同一份模組，
+ * 測試的預期值從這裡來，換站名時測試不用跟著改。
+ */
+export { siteConfig } from '../src/lib/site-config'
 
 export const ROOT = resolve(import.meta.dirname, '..')
 export const DIST = join(ROOT, 'dist')
 const CONTENT = join(ROOT, 'src/content')
+/** 文章集合（Starlight docs）；i18n 等其他集合不在這裡 */
+const DOCS = join(CONTENT, 'docs')
 
 export interface Post {
-  /** 篇章資料夾名稱，也是網址的一段：/mobx/<folder>/ */
+  /** 所屬主題：docs 底下的頂層資料夾名稱，也是網址的第一段 */
+  topic: TopicSlug
+  /** 篇章資料夾名稱，也是網址的第二段：/<topic>/<folder>/ */
   folder: string
   title: string
   description: string
@@ -28,24 +45,23 @@ export interface Post {
   body: string
 }
 
-function findMobxDirs(dir: string): string[] {
-  const found: string[] = []
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name)
-    if (!statSync(full).isDirectory()) continue
-    if (name === 'mobx') found.push(full)
-    else found.push(...findMobxDirs(full))
-  }
-  return found
+/** 主題設定（和網站讀同一份）：依主題 order 排序的主題、由 slug 取設定 */
+export { sortedTopics, topicConfig }
+
+/** docs 底下的頂層資料夾，也就是內容裡實際存在的主題 */
+export function topicDirs(): string[] {
+  return readdirSync(DOCS).filter((name) => statSync(join(DOCS, name)).isDirectory())
 }
 
-/** 所有篇章（含草稿），依 order 排序 */
+/** 所有主題的所有篇章（含草稿），依主題 order、再依篇章 order 排序 */
 export function allPosts(): Post[] {
   const posts: Post[] = []
-  for (const mobxDir of findMobxDirs(CONTENT)) {
-    for (const folder of readdirSync(mobxDir)) {
+  for (const topic of topicDirs()) {
+    // 沒登記的資料夾 build 就會失敗（見 src/lib/content-layout.ts），這裡只是讓型別收斂成 TopicSlug
+    if (!isTopicSlug(topic)) throw new Error(`主題資料夾 ${topic} 沒有登記在主題設定`)
+    for (const folder of readdirSync(join(DOCS, topic))) {
       const file = ['index.mdx', 'index.md']
-        .map((f) => join(mobxDir, folder, f))
+        .map((f) => join(DOCS, topic, folder, f))
         .find((f) => existsSync(f))
       if (!file) continue
       const source = readFileSync(file, 'utf8')
@@ -53,6 +69,7 @@ export function allPosts(): Post[] {
       if (!match) throw new Error(`${file} 沒有 frontmatter`)
       const data = parseYaml(match[1])
       posts.push({
+        topic,
         folder,
         title: data.title,
         description: data.description,
@@ -62,16 +79,34 @@ export function allPosts(): Post[] {
       })
     }
   }
-  return posts.sort((a, b) => a.order - b.order)
+  return posts.sort(
+    (a, b) => topicConfig(a.topic).order - topicConfig(b.topic).order || a.order - b.order,
+  )
 }
 
-/** 讀者看得到的篇章：非草稿，依 order 排序 */
+/** 讀者看得到的篇章：非草稿，依主題 order、再依篇章 order 排序 */
 export function publishedPosts(): Post[] {
   return allPosts().filter((p) => !p.draft)
 }
 
-export function postUrl(post: Pick<Post, 'folder'>): string {
-  return `/mobx/${post.folder}/`
+export interface TopicGroup {
+  topic: TopicConfig
+  /** 這個主題的篇章（依篇章 order，保留傳入的順序） */
+  posts: Post[]
+}
+
+/**
+ * 依主題 order 把篇章分組，只留下有篇章的主題。
+ * 傳入已發布篇章時，就是讀者在側欄、首頁看到的主題群組。
+ */
+export function groupByTopic(posts: readonly Post[]): TopicGroup[] {
+  return sortedTopics()
+    .map((topic) => ({ topic, posts: posts.filter((p) => p.topic === topic.slug) }))
+    .filter((group) => group.posts.length > 0)
+}
+
+export function postUrl(post: Pick<Post, 'topic' | 'folder'>): string {
+  return `/${post.topic}/${post.folder}/`
 }
 
 /** 網址對應到 dist 裡的檔案（靜態主機的解析方式） */
@@ -231,18 +266,48 @@ export interface NavLink {
 }
 
 /**
- * 側欄：標出「目前所在頁面」（aria-current="page"）的那個導覽區塊，
- * 回傳其中所有連結，依畫面上的順序。找不到時回傳 undefined。
+ * 頁面的主要側欄：無障礙名稱是介面字串「sidebarNav.accessibleLabel」（「主要」）的導覽區塊。
+ * 不靠 aria-current="page" 找，因為首頁的側欄沒有任何項目是目前頁面。找不到時回傳 undefined。
  */
+export function mainSidebarOf(page: HTMLElement): HTMLElement | undefined {
+  const label = siteUiStrings()['sidebarNav.accessibleLabel']
+  return page.querySelectorAll('nav').find((n) => n.getAttribute('aria-label') === label)
+}
+
+/** 主要側欄裡的所有連結，依畫面上的順序。找不到側欄時回傳 undefined。 */
 export function sidebarOf(page: HTMLElement): NavLink[] | undefined {
-  const nav = page
-    .querySelectorAll('nav')
-    .find((n) => n.querySelector('a[aria-current="page"]'))
+  const nav = mainSidebarOf(page)
   return nav?.querySelectorAll('a[href]').map((a) => ({
     href: a.getAttribute('href')!,
     text: textOf(a),
     current: a.getAttribute('aria-current') === 'page',
   }))
+}
+
+export interface NavGroup {
+  /** 群組標題 */
+  label: string
+  links: NavLink[]
+}
+
+/**
+ * 主要側欄的頂層群組（可展開收合的 <details>），依畫面上的順序。
+ * 找不到側欄時回傳 undefined。
+ */
+export function sidebarGroupsOf(page: HTMLElement): NavGroup[] | undefined {
+  const nav = mainSidebarOf(page)
+  if (!nav) return undefined
+  return nav
+    .querySelectorAll('details')
+    .filter((d) => !d.parentNode?.closest('details'))
+    .map((d) => ({
+      label: textOf(d.querySelector('summary')!),
+      links: d.querySelectorAll('a[href]').map((a) => ({
+        href: a.getAttribute('href')!,
+        text: textOf(a),
+        current: a.getAttribute('aria-current') === 'page',
+      })),
+    }))
 }
 
 /** 頁面引用的所有外部資源網址（<link href>、<script src>、<img src> 等），原樣回傳 */
