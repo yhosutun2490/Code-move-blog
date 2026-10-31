@@ -26,13 +26,22 @@
 }
 
 /* ---------- 頁首 ---------- */
-/* Starlight 在窄螢幕把主題切換收進側欄選單；沒有側欄的頁面（首頁、404）就沒有選單，
+/* Starlight 在窄螢幕把主題切換收進側欄選單；沒有側欄的頁面（404）就沒有選單，
    所以讓頁首右側那組（主題切換）在窄螢幕也顯示，和文章頁一樣隨時能切換 */
 :root:not([data-has-sidebar]) header .right-group {
   display: flex;
 }
 
-/* ---------- 首頁（系列封面）：標題、導言由 PageTitle 畫，這裡是篇章列表 ---------- */
+/* ---------- 首頁：封面的標題、導言由 PageTitle 畫，這裡是依主題分區的篇章列表 ---------- */
+/* 主題分區之間留白；分區標題（h2）沿用內文標題樣式 */
+.topic + .topic {
+  margin-top: 3rem;
+}
+
+.topic-desc {
+  color: var(--ink-soft);
+}
+
 .series {
   list-style: none;
   padding: 0;

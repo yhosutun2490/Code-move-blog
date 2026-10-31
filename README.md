@@ -12,7 +12,7 @@ npm run dev        # http://localhost:4321
 npm run build      # 靜態輸出到 dist/
 npm run preview    # 預覽 build 結果
 npm test           # build 後檢查 dist/ 的頁面（網址、首頁封面與列表、側欄、目錄、搜尋、上下篇、草稿、繁中介面、字體、island、無 Shiki、程式碼區塊）
-npm run test:e2e   # build 後用 Playwright 在瀏覽器操作 preview：程式碼動畫、兩個 demo、主題切換、手機版面與選單
+npm run test:e2e   # build 後用 Playwright 在瀏覽器操作 preview：程式碼動畫、兩個 demo、主題切換、首頁版型、手機版面與選單
 ```
 
 `test:e2e` 的測試在 `e2e/`，第一次跑之前要下載瀏覽器：
@@ -48,7 +48,7 @@ src/
 │   ├── MagicSteps.astro       # build 時用 Shiki 預編譯 token（client 不載 Shiki）
 │   ├── MagicStepper.tsx       # React island：上一步／下一步 + 動畫
 │   └── starlight/             # 覆寫 Starlight 元件
-│       ├── PageTitle.astro    # 標題區：eyebrow（<主題名稱> · 第 N 篇 / 共 M 篇、自我學習系列）+ 標題 + 導言
+│       ├── PageTitle.astro    # 標題區：eyebrow（文章頁：<主題名稱> · 第 N 篇 / 共 M 篇；首頁：網站設定的封面 eyebrow）+ 標題 + 導言
 │       ├── SiteTitle.astro    # 頁首字標 mobx/motion
 │       └── Footer.astro       # 上下篇之後加上打造說明
 ├── lib/
@@ -56,7 +56,7 @@ src/
 │   ├── code-blocks.ts         # 一般程式碼區塊（Expressive Code）設定
 │   ├── topics.ts              # 主題設定：每個主題的 slug、名稱、簡介、排序（純資料，Astro 設定、元件、測試共用）
 │   └── series.ts              # 以主題為單位的篇章查詢（不含草稿、依 order 排序）
-├── pages/index.astro          # 系列封面與篇章列表（文章頁、側欄、上下篇由 Starlight 產生）
+├── pages/index.astro          # 首頁：側欄 + 網站封面 + 依主題分區的篇章列表（列表由 series.ts 的 publishedTopics 產生）
 └── styles/
     ├── theme.css              # 字體、顏色 token、版心寬度的唯一來源，含 Starlight --sl-* 對應
     └── global.css             # 網站自己的元件樣式（eyebrow / lede、首頁列表、stepper、demo），只用 theme.css 的 token
@@ -68,8 +68,9 @@ e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
 ├── magic-steps.spec.ts        # 程式碼動畫
 ├── demos.spec.ts              # 兩個互動 demo
 ├── theme.spec.ts              # 主題切換與保留
-├── mobile.spec.ts             # 手機版面、側欄選單
-└── helpers.ts
+├── mobile.spec.ts             # 手機版面、首頁與文章頁的側欄選單
+├── home.spec.ts               # 大螢幕首頁：側欄在內容區左邊、搜尋入口可見
+└── helpers.ts                 # 測試用文章（第一個主題的第一篇已發布文章，從原始碼讀出）等共用工具
 ```
 
 ## 新增一篇文章

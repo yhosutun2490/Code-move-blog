@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { POST } from './helpers'
+import { POST, POST_TITLE } from './helpers'
 
 const picker = (page: Page) =>
   page.getByRole('banner').getByRole('combobox', { name: '選擇佈景主題' })
@@ -16,7 +16,7 @@ test('切換主題會改變頁面配色，換頁後仍保留', async ({ page }) 
   const light = await background(page)
 
   // 從首頁的篇章列表點進文章
-  await page.getByRole('link', { name: /從 getter \/ setter 到迷你 autorun/ }).first().click()
+  await page.getByRole('main').getByRole('link', { name: POST_TITLE }).click()
   await expect(page).toHaveURL(POST)
   await expect(picker(page)).toHaveValue('light')
   expect(await background(page)).toBe(light)
@@ -30,7 +30,8 @@ test('切換主題會改變頁面配色，換頁後仍保留', async ({ page }) 
 test.describe('手機寬度', () => {
   test.use({ viewport: { width: 375, height: 800 } })
 
-  for (const path of ['/', '/404.html']) {
+  // 沒有側欄的頁面沒有選單，主題切換留在頁首；有側欄的頁面（首頁、文章頁）收在選單裡（見 mobile.spec.ts）
+  for (const path of ['/404.html']) {
     test(`${path} 的頁首有主題切換`, async ({ page }) => {
       await page.goto(path)
       await expect(picker(page)).toBeVisible()
