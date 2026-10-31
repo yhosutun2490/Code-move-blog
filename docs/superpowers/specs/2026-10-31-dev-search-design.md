@@ -35,14 +35,19 @@ Starlight 的搜尋（Pagefind）在 `astro dev` 底下不能用，原因有兩�
 
 **a. 解除元件的 dev 判斷**
 
-加一個 Vite plugin（`apply: 'serve'`、`enforce: 'pre'`），只轉換 Starlight 的 `components/Search.astro` 原始檔（不帶 query 的那個 module id）：把其中的 `import.meta.env.DEV` 換成 `false`。必須在 Astro 編譯 `.astro` 之前執行，畫面和 `<script>`（Astro 從編譯結果拆出的 `?astro&type=script` module）才都會吃到改寫；實作時要確認兩者都生效。
+加一個 Vite plugin（`apply: 'serve'`、`enforce: 'pre'`），轉換 Starlight `components/Search.astro` 的兩個 module，把其中的 `import.meta.env.DEV` 換成 `false`：
 
-- 比對不到 `import.meta.env.DEV` 時直接丟錯，訊息說明這是為了 dev 搜尋而改寫 Starlight 元件、升級後要更新這個 plugin。不會默默失效。
+- **元件本身**（不帶 query 的 module id）：拿掉畫面上的 dev 提示，改成放搜尋容器。
+- **瀏覽器端的 `<script>`**（id 帶 `?v=…&astro&type=script…`）：拿掉 `if (import.meta.env.DEV) return`，才會載入 Pagefind UI。
+
+（2026-10-31 spike 驗證：Astro 是從磁碟上的原始檔拆出 `<script>`，只改元件本身不會影響 script，兩個 module 都要改。SSR 那份 script module 是空的佔位內容，裡面沒有這個判斷，照原樣放過。）
+
+- 元件本身比對不到 `import.meta.env.DEV` 時直接丟錯，訊息說明這是為了 dev 搜尋而改寫 Starlight 元件、升級後要更新這個 plugin。script 那份若 Starlight 改了寫法，由 dev 搜尋的 Playwright 測試抓到。
 - 不複製 Starlight 的元件，樣式、翻譯、`pagefindUserConfig` 都沿用原本的。
 
 **b. 在 dev server 提供 `/pagefind/*`**
 
-在 `astro:server:setup` 註冊 Vite middleware，處理 `/pagefind/` 底下的請求，回傳記憶體裡的索引檔（Pagefind Node API 的 `getFiles()`），並依副檔名設定 Content-Type。
+在同一組 Vite plugin 的 `configureServer` 註冊 middleware（排在 Vite 內建 middleware 之前，Vite 才不會把 `/pagefind/pagefind.js` 當成要轉換的模組），處理 `/pagefind/` 底下的請求，回傳記憶體裡的索引檔（Pagefind Node API 的 `getFiles()`），並依副檔名設定 Content-Type。
 
 ### 2. 建索引
 
