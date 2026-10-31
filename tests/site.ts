@@ -250,13 +250,17 @@ export interface NavLink {
 }
 
 /**
- * 側欄：標出「目前所在頁面」（aria-current="page"）的那個導覽區塊，
- * 回傳其中所有連結，依畫面上的順序。找不到時回傳 undefined。
+ * 頁面的主要側欄：無障礙名稱是介面字串「sidebarNav.accessibleLabel」（「主要」）的導覽區塊。
+ * 不靠 aria-current="page" 找，因為首頁的側欄沒有任何項目是目前頁面。找不到時回傳 undefined。
  */
+export function mainSidebarOf(page: HTMLElement): HTMLElement | undefined {
+  const label = siteUiStrings()['sidebarNav.accessibleLabel']
+  return page.querySelectorAll('nav').find((n) => n.getAttribute('aria-label') === label)
+}
+
+/** 主要側欄裡的所有連結，依畫面上的順序。找不到側欄時回傳 undefined。 */
 export function sidebarOf(page: HTMLElement): NavLink[] | undefined {
-  const nav = page
-    .querySelectorAll('nav')
-    .find((n) => n.querySelector('a[aria-current="page"]'))
+  const nav = mainSidebarOf(page)
   return nav?.querySelectorAll('a[href]').map((a) => ({
     href: a.getAttribute('href')!,
     text: textOf(a),
@@ -271,13 +275,11 @@ export interface NavGroup {
 }
 
 /**
- * 側欄的頂層群組（可展開收合的 <details>），依畫面上的順序。
- * 側欄的找法同 sidebarOf；找不到時回傳 undefined。
+ * 主要側欄的頂層群組（可展開收合的 <details>），依畫面上的順序。
+ * 找不到側欄時回傳 undefined。
  */
 export function sidebarGroupsOf(page: HTMLElement): NavGroup[] | undefined {
-  const nav = page
-    .querySelectorAll('nav')
-    .find((n) => n.querySelector('a[aria-current="page"]'))
+  const nav = mainSidebarOf(page)
   if (!nav) return undefined
   return nav
     .querySelectorAll('details')

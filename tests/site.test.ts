@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import type { HTMLElement } from 'node-html-parser'
 import { describe, expect, it } from 'vitest'
 import {
   allPosts,
@@ -95,7 +96,7 @@ describe('純靜態輸出', () => {
   })
 })
 
-describe('首頁是系列封面', () => {
+describe('首頁是網站封面', () => {
   const { title: COVER_TITLE, lede: COVER_LEDE, eyebrow: COVER_EYEBROW } = siteConfig.cover
 
   it('標題是網站設定的封面標題，緊接著以導言樣式顯示導言', () => {
@@ -112,10 +113,10 @@ describe('首頁是系列封面', () => {
     expect(above?.classList.contains('eyebrow')).toBe(true)
   })
 
-  it('沒有側欄和本頁目錄，內容是單欄', () => {
+  it('有側欄，沒有本頁目錄', () => {
     const home = loadPage('/')
     const html = home.querySelector('html')!
-    expect(html.hasAttribute('data-has-sidebar'), '首頁有側欄').toBe(false)
+    expect(html.hasAttribute('data-has-sidebar'), '首頁沒有側欄').toBe(true)
     expect(html.hasAttribute('data-has-toc'), '首頁有本頁目錄').toBe(false)
     expect(tocOf(home)).toBeUndefined()
   })
@@ -149,29 +150,58 @@ describe('首頁是系列封面', () => {
   })
 })
 
-describe('首頁篇章列表', () => {
-  // 首頁上「篇章列表」的項目 = 連到文章、而且連結文字含簡介的那些連結。
-  // （側欄或其他導覽也會連到文章，但不會附上簡介。）
-  function listEntries() {
-    const home = loadPage('/')
-    const published = new Map(posts.map((p) => [postUrl(p), p]))
-    return home
-      .querySelectorAll('a[href]')
-      .map((a) => ({ href: a.getAttribute('href')!, text: textOf(a) }))
-      .filter(({ href, text }) => {
-        const post = published.get(href)
-        return post !== undefined && text.includes(post.description)
-      })
-  }
+describe('首頁依主題分區的篇章列表', () => {
+  const home = loadPage('/')
+  // 有已發布文章的主題，依主題 order；每個主題的篇章依篇章 order
+  const groups = topics()
+    .map((topic) => ({ topic, posts: posts.filter((p) => p.topic === topic.slug) }))
+    .filter((g) => g.posts.length > 0)
 
-  it('依篇章順序列出所有非草稿篇章', () => {
-    expect(listEntries().map((e) => e.href)).toEqual(posts.map(postUrl))
+  // 主題分區 = 以標題命名（aria-labelledby）的 <section>，名稱就是那個標題的文字
+  const sections = home.querySelectorAll('main section[aria-labelledby]').map((section) => {
+    const heading = home.getElementById(section.getAttribute('aria-labelledby')!)
+    return { section, heading, name: heading ? textOf(heading) : '' }
   })
+  const sectionOf = (name: string) => sections.find((s) => s.name === name)
+
+  // 分區裡「篇章列表」的項目：有序列表裡、連到文章的連結
+  const entriesOf = (section: HTMLElement) =>
+    section
+      .querySelectorAll('ol > li a[href]')
+      .map((a) => ({ href: a.getAttribute('href')!, text: textOf(a) }))
+
+  it('至少有一個主題分區（避免測試空轉）', () => {
+    expect(groups.length).toBeGreaterThan(0)
+  })
+
+  it('依主題 order 列出有已發布文章的主題，只含草稿的主題沒有分區', () => {
+    expect(sections.map((s) => s.name)).toEqual(groups.map((g) => g.topic.name))
+  })
+
+  it.each(groups.map((g) => [g.topic.name, g] as const))(
+    '「%s」分區的標題層級低於 h1，並寫著主題簡介',
+    (name, { topic }) => {
+      const { section, heading } = sectionOf(name)!
+      expect(heading!.tagName).toMatch(/^H[2-6]$/)
+      expect(section.querySelectorAll('*').includes(heading!), '分區標題不在分區裡').toBe(true)
+      expect(textOf(section)).toContain(topic.description)
+    },
+  )
+
+  it.each(groups.map((g) => [g.topic.name, g] as const))(
+    '「%s」分區依篇章順序列出該主題所有已發布篇章',
+    (name, group) => {
+      const entries = entriesOf(sectionOf(name)!.section)
+      expect(entries.map((e) => e.href)).toEqual(group.posts.map(postUrl))
+    },
+  )
 
   it.each(posts.map((p) => [postUrl(p), p] as const))(
     '%s 的項目有兩位數編號、標題與簡介',
     (url, post) => {
-      const entry = listEntries().find((e) => e.href === url)!
+      const entry = entriesOf(sectionOf(topicOf(post.topic).name)!.section).find(
+        (e) => e.href === url,
+      )!
       const number = String(post.order).padStart(2, '0')
       expect(entry.text.startsWith(number)).toBe(true)
       expect(entry.text).toContain(post.title)
@@ -180,9 +210,8 @@ describe('首頁篇章列表', () => {
   )
 
   it('不列出草稿', () => {
-    const home = loadPage('/')
     for (const draft of allPosts().filter((p) => p.draft)) {
-      expect(home.querySelector(`a[href="${postUrl(draft)}"]`)).toBeNull()
+      expect(home.querySelector(`main a[href="${postUrl(draft)}"]`)).toBeNull()
     }
   })
 })
@@ -317,7 +346,7 @@ describe('文章頁側欄', () => {
     '%s 的側欄依主題分組，群組標題是主題名稱，組內依篇章順序，並標出目前篇章',
     (url, post) => {
       const sidebar = sidebarGroupsOf(loadPage(url))
-      expect(sidebar, `${url} 沒有標出目前篇章的側欄`).toBeDefined()
+      expect(sidebar, `${url} 沒有側欄`).toBeDefined()
       expect(sidebar!.map((g) => g.label)).toEqual(groups.map((g) => g.topic.name))
       sidebar!.forEach((group, i) => {
         expect(group.links.map((l) => l.href)).toEqual(groups[i].posts.map(postUrl))
@@ -336,6 +365,33 @@ describe('文章頁側欄', () => {
       expect(sidebarOf(page)!.map((l) => l.href)).toEqual(grouped)
     },
   )
+})
+
+describe('首頁側欄', () => {
+  const home = loadPage('/')
+  const withoutCurrent = (groups: ReturnType<typeof sidebarGroupsOf>) =>
+    groups?.map((g) => ({ label: g.label, links: g.links.map(({ href, text }) => ({ href, text })) }))
+
+  it('至少有一個群組（避免測試空轉）', () => {
+    expect(sidebarGroupsOf(home)?.length).toBeGreaterThan(0)
+  })
+
+  it.each(posts.map(postUrl))('群組、連結與順序和 %s 的側欄相同', (url) => {
+    expect(withoutCurrent(sidebarGroupsOf(home))).toEqual(
+      withoutCurrent(sidebarGroupsOf(loadPage(url))),
+    )
+  })
+
+  it('沒有任何項目被標為目前頁面', () => {
+    const links = sidebarOf(home)!
+    expect(links.length).toBeGreaterThan(0)
+    expect(links.filter((l) => l.current)).toEqual([])
+  })
+
+  it('沒有群組以外的連結', () => {
+    const grouped = sidebarGroupsOf(home)!.flatMap((g) => g.links.map((l) => l.href))
+    expect(sidebarOf(home)!.map((l) => l.href)).toEqual(grouped)
+  })
 })
 
 describe('本頁目錄', () => {

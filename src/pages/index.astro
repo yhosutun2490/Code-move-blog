@@ -4,9 +4,10 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro'
 import { publishedTopics } from '../lib/series'
 import { siteConfig } from '../lib/site-config'
 
-// 系列封面：eyebrow、標題與導言由 PageTitle 依 frontmatter 畫（和文章頁的標題區同一套），
-// 這裡只負責篇章列表：依主題 order、再依篇章 order 排成一欄，不含草稿。
-const posts = (await publishedTopics()).flatMap(({ posts }) => posts)
+// 網站封面：eyebrow、標題與導言由 PageTitle 依 frontmatter 畫（和文章頁的標題區同一套），
+// 這裡只負責依主題分區的篇章列表。
+// 和側欄同一個來源：只列有已發布文章的主題，依主題 order；組內依篇章 order，不含草稿。
+const groups = await publishedTopics()
 
 // StarlightPage 會用 docs 集合的 schema 驗證 frontmatter，所以 description、order 都要給。
 // 封面標題與導言來自網站設定；description 就是封面導言，也是 <meta name="description">。
@@ -14,26 +15,31 @@ const frontmatter = {
   title: siteConfig.cover.title,
   description: siteConfig.cover.lede,
   order: 0, // 只為了通過 schema（order 必填），首頁不在側欄裡，這個值不會被用到
-  // 用一般文章版型（不用 splash），只關掉本頁目錄；側欄由下面的 hasSidebar 關掉。
-  // 封面只有一欄：標題、導言、篇章列表，篇章列表本身就是導覽。
+  // 用一般文章版型（不用 splash）：左側是和文章頁相同的側欄，只關掉本頁目錄
   tableOfContents: false as const,
 }
 ---
 
-<StarlightPage frontmatter={frontmatter} hasSidebar={false}>
-  <ol class="series not-content">
-    {
-      posts.map((post) => (
-        <li>
-          <a href={`/${post.id}/`}>
-            <span class="series-num">{String(post.data.order).padStart(2, '0')}</span>
-            <span class="series-body">
-              <span class="series-title">{post.data.title}</span>
-              <span class="series-desc">{post.data.description}</span>
-            </span>
-          </a>
-        </li>
-      ))
-    }
-  </ol>
+<StarlightPage frontmatter={frontmatter}>
+  {
+    groups.map(({ topic, posts }) => (
+      <section class="topic" aria-labelledby={`topic-${topic.slug}`}>
+        <h2 id={`topic-${topic.slug}`}>{topic.name}</h2>
+        <p class="topic-desc">{topic.description}</p>
+        <ol class="series not-content">
+          {posts.map((post) => (
+            <li>
+              <a href={`/${post.id}/`}>
+                <span class="series-num">{String(post.data.order).padStart(2, '0')}</span>
+                <span class="series-body">
+                  <span class="series-title">{post.data.title}</span>
+                  <span class="series-desc">{post.data.description}</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))
+  }
 </StarlightPage>

@@ -1,6 +1,15 @@
 import type { Locator, Page } from '@playwright/test'
+import { postUrl, publishedPosts } from '../tests/site'
 
-export const POST = '/mobx/01-getter-setter/'
+// 預期值來自原始碼（和 build 產出測試同一套工具）：第一個主題的第一篇已發布文章。
+// 換篇章順序或資料夾名稱時不用改這裡。
+const firstPost = publishedPosts()[0]
+if (!firstPost) throw new Error('找不到任何已發布文章')
+
+/** 第一篇已發布文章的網址，例如 /<主題>/<資料夾>/ */
+export const POST = postUrl(firstPost)
+/** 第一篇已發布文章的標題（側欄、首頁列表的連結文字） */
+export const POST_TITLE = firstPost.title
 
 /**
  * React island 用 client:visible 載入：捲到畫面上之後才 hydrate。
