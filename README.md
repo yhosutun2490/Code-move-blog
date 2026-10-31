@@ -31,19 +31,21 @@ vitest.config.ts               # npm test：只跑 tests/**/*.test.ts
 playwright.config.ts           # npm run test:e2e：起 astro preview，跑 e2e/*.spec.ts
 src/
 ├── content.config.ts          # Starlight docs collection：每篇 = 一個資料夾的 index.mdx
-├── routeData.ts               # 把側欄攤平成每個主題群組底下一排篇章
+├── routeData.ts               # 把側欄攤平成每個主題群組底下一排篇章，並拿掉只含草稿的空群組
 ├── content/i18n/zh-Hant-TW.json  # Starlight 介面字串（繁中，見設計備註）
 ├── content/docs/              # 每個頂層資料夾是一個主題，網址是 /<主題>/<篇章資料夾>/
-│   └── mobx/                  # 主題「MobX 拆解」（登記在 src/lib/topics.ts）
-│       ├── 01-getter-setter/
-│       │   ├── index.mdx      # 文章本體
-│       │   └── demos/
-│       │       ├── steps/*.js # magic move 每一步的程式碼（獨立檔，有語法提示）
-│       │       ├── steps.ts   # 步驟標題、說明 + 用 ?raw 匯入程式碼
-│       │       ├── mini-reactive.ts
-│       │       ├── MiniReactiveDemo.tsx
-│       │       └── MobxCartDemo.tsx
-│       └── draft-fixture/index.mdx   # 測試用草稿（見「草稿」），不是文章
+│   ├── mobx/                  # 主題「MobX 拆解」（登記在 src/lib/topics.ts）
+│   │   ├── 01-getter-setter/
+│   │   │   ├── index.mdx      # 文章本體
+│   │   │   └── demos/
+│   │   │       ├── steps/*.js # magic move 每一步的程式碼（獨立檔，有語法提示）
+│   │   │       ├── steps.ts   # 步驟標題、說明 + 用 ?raw 匯入程式碼
+│   │   │       ├── mini-reactive.ts
+│   │   │       ├── MiniReactiveDemo.tsx
+│   │   │       └── MobxCartDemo.tsx
+│   │   └── draft-fixture/index.mdx   # 測試用草稿（見「草稿」），不是文章
+│   └── draft-topic/           # 只含草稿的測試用主題（見「草稿」），不要刪除
+│       └── draft-fixture/index.mdx
 ├── components/
 │   ├── MagicSteps.astro       # build 時用 Shiki 預編譯 token（client 不載 Shiki）
 │   ├── MagicStepper.tsx       # React island：上一步／下一步 + 動畫
@@ -103,6 +105,14 @@ e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
 
 `src/content/docs/mobx/draft-fixture/` 是**測試用的草稿**：`npm test` 會確認它的標題、簡介和小節標題不出現在任何頁面或搜尋索引裡。
 請不要刪掉它、不要把它改成 `draft: false`，也不要把它的文字用在別的地方（否則測試會失敗）。開發時在 `astro dev` 的側欄看到它是預期中的。
+
+`src/content/docs/draft-topic/` 是**只含草稿的測試用主題**（登記在 `src/lib/topics.ts`，裡面只有一篇 `draft: true` 的篇章）。`npm test` 用它確認：
+
+- 沒有已發布文章的主題不出現在側欄和首頁，主題名稱與簡介也不在任何頁面或搜尋索引裡
+- `mobx` 以外的主題，草稿同樣在全站隱藏，也不算進任何主題的「共 M 篇」
+- 測試工具確實掃到了 `mobx` 以外的主題資料夾（只掃到一個主題時測試會失敗）
+
+請不要刪掉這個資料夾或它在主題設定的登記，也不要把裡面的篇章改成 `draft: false`。`astro dev` 時側欄看得到這個主題和草稿提示，這是預期中的。
 
 ## 設計備註
 
