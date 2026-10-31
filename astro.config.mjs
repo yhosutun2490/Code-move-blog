@@ -4,6 +4,7 @@ import starlight from '@astrojs/starlight'
 import react from '@astrojs/react'
 import { expressiveCode } from './src/lib/code-blocks'
 import { assertContentLayout } from './src/lib/content-layout'
+import { devSearch } from './src/lib/dev-search/integration'
 import { siteConfig } from './src/lib/site-config'
 import { sortedTopics } from './src/lib/topics'
 
@@ -42,5 +43,7 @@ export default defineConfig({
       expressiveCode,
     }),
     react(),
+    // astro dev 時也能用搜尋（索引在記憶體、跟著內容即時重建）；astro build 不受影響
+    devSearch(),
   ],
 })

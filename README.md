@@ -8,11 +8,11 @@
 
 ```bash
 npm install
-npm run dev        # http://localhost:4321
+npm run dev        # http://localhost:4321（搜尋也能用，含草稿；見下方說明）
 npm run build      # 靜態輸出到 dist/
 npm run preview    # 預覽 build 結果
 npm test           # build 後檢查 dist/ 的頁面（網址、首頁封面與列表、側欄、目錄、搜尋、上下篇、草稿、繁中介面、字體、island、無 Shiki、程式碼區塊）
-npm run test:e2e   # build 後用 Playwright 在瀏覽器操作 preview：程式碼動畫、兩個 demo、主題切換、首頁版型、手機版面與選單
+npm run test:e2e   # build 後用 Playwright 在瀏覽器操作 preview：程式碼動畫、兩個 demo、主題切換、首頁版型、手機版面與選單；另外起 astro dev 測 dev 搜尋
 ```
 
 `test:e2e` 的測試在 `e2e/`，第一次跑之前要下載瀏覽器：
@@ -21,14 +21,18 @@ npm run test:e2e   # build 後用 Playwright 在瀏覽器操作 preview：程式
 npx playwright install chromium
 ```
 
+`astro dev` 時頁首的搜尋也能用：第一次搜尋時才建索引（從 dev server 抓所有頁面，頁數越多越久），
+之後改了 `src/content/` 底下的檔案，重新整理頁面就搜得到新內容。dev 的索引包含草稿（和 dev 顯示草稿一致）；
+正式版的索引由 `npm run build` 產生，不含草稿。
+
 需要 Node 22.23.4 以上（Astro 7 的要求）。
 
 ## 結構
 
 ```
-astro.config.mjs               # Starlight 設定：語系、側欄（由主題設定產生）、customCss、元件覆寫、Expressive Code
+astro.config.mjs               # Starlight 設定：語系、側欄（由主題設定產生）、customCss、元件覆寫、Expressive Code、dev 搜尋
 vitest.config.ts               # npm test：只跑 tests/**/*.test.ts
-playwright.config.ts           # npm run test:e2e：起 astro preview，跑 e2e/*.spec.ts
+playwright.config.ts           # npm run test:e2e：起 astro preview 和 astro dev，跑 e2e/*.spec.ts
 src/
 ├── content.config.ts          # Starlight docs collection：每篇 = 一個資料夾的 index.mdx
 ├── routeData.ts               # 把側欄攤平成每個主題群組底下一排篇章，並拿掉只含草稿的空群組
@@ -60,6 +64,7 @@ src/
 │   ├── topics.ts              # 主題設定：每個主題的 slug、名稱、簡介、排序（純資料，Astro 設定、元件、測試共用）
 │   ├── content-layout.ts      # 內容目錄檢查（載入 Astro 設定時執行）：資料夾都要登記成主題、篇章都要在子資料夾裡
 │   ├── series.ts              # 以主題為單位的篇章查詢（不含草稿、依 order 排序）
+│   ├── dev-search/            # astro dev 時的搜尋：解除 Starlight 的 dev 限制、抓頁面建記憶體索引、內容變動時重建
 │   └── pagination.ts          # 上一篇 / 下一篇：只在目前主題的側欄群組內串連（routeData.ts 用）
 ├── pages/index.astro          # 首頁：側欄 + 網站封面 + 依主題分區的篇章列表（列表由 series.ts 的 publishedTopics 產生）
 └── styles/
@@ -70,6 +75,7 @@ tests/                         # npm test：檢查 build 出來的 dist/
 ├── code-blocks.test.ts        # 一般程式碼區塊和程式碼動畫的外框、字體、配色一致
 ├── pagination.test.ts         # 上下篇不跨主題（刻意例外：直接測純函式，見設計備註）
 ├── content-layout.test.ts     # 內容目錄檢查讓 build 失敗的情況（刻意例外：直接測檢查函式，見設計備註）
+├── dev-search-*.test.ts       # dev 搜尋的抓頁與索引快取（刻意例外：直接測函式，見設計備註）
 └── site.ts / code-blocks.ts   # 讀 dist 的觀察工具
 e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
 ├── magic-steps.spec.ts        # 程式碼動畫
@@ -77,6 +83,7 @@ e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
 ├── theme.spec.ts              # 主題切換與保留
 ├── mobile.spec.ts             # 手機版面、首頁與文章頁的側欄選單
 ├── home.spec.ts               # 大螢幕首頁：側欄在內容區左邊、搜尋入口可見
+├── dev-search.spec.ts         # 對 astro dev：搜尋框可用、搜得到草稿（playwright.config.ts 的 dev project）
 └── helpers.ts                 # 測試用文章等共用工具：通用測試用「第一個主題的第一篇」（從原始碼讀出），
                                # 程式碼動畫和 demo 的測試明確指定 mobx/01-getter-setter（驗的是那篇特有的內容）
 ```
@@ -146,9 +153,14 @@ e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
   標題的 Noto Serif TC 用字少、只在大標用到兩個字重，連續看兩頁時可變字體較小，就留著可變字體。
   代價是 render-blocking CSS 變大：全站 CSS gzip 後從約 105 KB 變成約 223 KB（靜態字重每個字重都要一整組 `@font-face`）。
   字型檔本身用 `font-display: swap`，不會擋住畫面。
-- **測試只看 build 產出，有兩個刻意的例外**：`tests/` 的測試原則上只觀察 `npm run build` 產出的 `dist/`（預期值來自原始碼和設定），不碰內部實作。
+- **測試只看 build 產出，有三個刻意的例外**：`tests/` 的測試原則上只觀察 `npm run build` 產出的 `dist/`（預期值來自原始碼和設定），不碰內部實作。
   - `tests/pagination.test.ts` 直接測上下篇的純函式（`src/lib/pagination.ts`）。現在只有一個已發布的主題，build 產出裡看不到「跨主題」的情況，
     觀察 `dist/` 證明不了上下篇不會跨過主題邊界，所以直接餵多個主題群組的側欄。之後有第二個已發布主題時，`site.test.ts` 的上下篇測試也會涵蓋到。
   - `tests/content-layout.test.ts` 直接測內容目錄檢查（`src/lib/content-layout.ts`）。它負責讓 build 失敗，失敗時沒有 `dist/` 可看，
     也不能在真的內容目錄裡放壞掉的檔案，所以對暫存的內容目錄呼叫同一個檢查。
+  - `tests/dev-search-crawl.test.ts`、`tests/dev-search-cache.test.ts` 直接測 dev 搜尋的抓頁與索引快取（`src/lib/dev-search/`）。
+    那是 `astro dev` 才有的行為，`dist/` 裡看不到；瀏覽器端的行為另由 `e2e/dev-search.spec.ts` 對 dev server 驗證。
+- **dev 搜尋改寫了 Starlight 的搜尋元件**：Starlight 在 dev 時刻意關掉搜尋（`Search.astro` 判斷 `import.meta.env.DEV`），
+  `src/lib/dev-search/integration.ts` 在 dev 時把它換成 `false`（元件和瀏覽器端 script 兩份都要改）。升級 Starlight 後若元件裡找不到這個判斷，
+  dev 打開第一個頁面時就會報錯；若只有 script 那份改了寫法，`e2e/dev-search.spec.ts` 會失敗。`astro build` 不受影響。
 - **之後要部署到 Void / Cloudflare**：目前是純靜態輸出，在 `astro.config.mjs` 加 adapter 即可。
