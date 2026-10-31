@@ -21,7 +21,7 @@ npm run test:e2e   # build 後用 Playwright 在瀏覽器操作 preview：程式
 npx playwright install chromium
 ```
 
-`astro dev` 時頁首的搜尋也能用：第一次搜尋時才建索引（從 dev server 抓所有頁面，會慢幾秒），
+`astro dev` 時頁首的搜尋也能用：第一次搜尋時才建索引（從 dev server 抓所有頁面，頁數越多越久），
 之後改了 `src/content/` 底下的檔案，重新整理頁面就搜得到新內容。dev 的索引包含草稿（和 dev 顯示草稿一致）；
 正式版的索引由 `npm run build` 產生，不含草稿。
 
@@ -162,5 +162,5 @@ e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
     那是 `astro dev` 才有的行為，`dist/` 裡看不到；瀏覽器端的行為另由 `e2e/dev-search.spec.ts` 對 dev server 驗證。
 - **dev 搜尋改寫了 Starlight 的搜尋元件**：Starlight 在 dev 時刻意關掉搜尋（`Search.astro` 判斷 `import.meta.env.DEV`），
   `src/lib/dev-search/integration.ts` 在 dev 時把它換成 `false`（元件和瀏覽器端 script 兩份都要改）。升級 Starlight 後若元件裡找不到這個判斷，
-  dev 會直接報錯；若只有 script 那份改了寫法，`e2e/dev-search.spec.ts` 會失敗。`astro build` 不受影響。
+  dev 打開第一個頁面時就會報錯；若只有 script 那份改了寫法，`e2e/dev-search.spec.ts` 會失敗。`astro build` 不受影響。
 - **之後要部署到 Void / Cloudflare**：目前是純靜態輸出，在 `astro.config.mjs` 加 adapter 即可。

@@ -29,7 +29,7 @@ Starlight 的搜尋（Pagefind）在 `astro dev` 底下不能用，原因有兩�
 
 ### 1. dev 搜尋 integration（只在 `astro dev` 生效）
 
-新增一個 Astro integration，在 `astro.config.mjs` 註冊。它只掛在 dev 的 hook 上（`astro:config:setup` 時判斷 `command === 'dev'`，以及 `astro:server:setup`），`astro build` 不會執行任何部分。
+新增一個 Astro integration，在 `astro.config.mjs` 註冊。它只在 `astro:config:setup` 判斷 `command === 'dev'` 時注入 Vite plugin（皆為 `apply: 'serve'`），`astro build` 不會執行任何部分。
 
 它做兩件事：
 
@@ -60,7 +60,7 @@ Starlight 的搜尋（Pagefind）在 `astro dev` 底下不能用，原因有兩�
 
 - 監看 dev server 的 watcher：`src/content/` 底下有新增、修改、刪除時，把索引標成過期（丟掉舊的 Pagefind index）。
 - 下一次請求 `/pagefind/` 時重建。Vite 在內容變動後本來就會重新整理頁面，讀者重新整理後載入的就是新索引。
-- 重建前呼叫舊 index 的 `deleteIndex()` 釋放資源；dev server 關閉時呼叫 `pagefind.close()`。
+- 標成過期時釋放舊 index（`deleteIndex()`；若還在建立中，建好後才釋放，釋放失敗不影響下一份）；dev server 關閉時呼叫 `pagefind.close()`。
 
 ### 4. 錯誤處理
 
@@ -105,6 +105,6 @@ Starlight 的搜尋（Pagefind）在 `astro dev` 底下不能用，原因有兩�
 - [ ] dev 時搜得到草稿測試主題的文字（Playwright）
 - [ ] 修改文章後重新整理，搜得到新內容（單元測試驗證重建邏輯；手動驗證一次）
 - [ ] 建索引失敗時 dev server 不會掛掉，下一次請求會重試（單元測試）
-- [ ] Starlight 搜尋元件裡找不到 `import.meta.env.DEV` 時，dev 啟動會報出清楚的錯誤
+- [ ] Starlight 搜尋元件裡找不到 `import.meta.env.DEV` 時，dev 打開第一個頁面時會報出清楚的錯誤
 - [ ] `npm test`、`npm run test:e2e`、`tsc --noEmit` 全部通過，正式版索引仍不含草稿
 - [ ] README 已更新
