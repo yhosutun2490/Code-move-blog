@@ -1,9 +1,12 @@
 ---
-// 頁首字標 mobx/motion：斜線用 MobX 橘，點了回首頁。
+// 頁首字標「前段/後段」：字樣來自網站設定，斜線用強調色，點了回首頁。
+import { siteConfig } from '../../lib/site-config'
+
 const { siteTitleHref } = Astro.locals.starlightRoute
+const { before, after } = siteConfig.mark
 ---
 
-<a href={siteTitleHref} class="site-mark" translate="no">mobx<span>/</span>motion</a>
+<a href={siteTitleHref} class="site-mark" translate="no">{before}<span>/</span>{after}</a>
 
 <style>
   .site-mark {

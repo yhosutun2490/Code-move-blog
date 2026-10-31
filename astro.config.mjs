@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
 import react from '@astrojs/react'
 import { expressiveCode } from './src/lib/code-blocks'
+import { siteConfig } from './src/lib/site-config'
 
 // 靜態輸出：build 完就是純 HTML + 少量 island JS，丟到任何靜態主機都能跑。
 // 之後要接 Void / Cloudflare 時，只需要在這裡加 adapter。
@@ -11,7 +12,8 @@ import { expressiveCode } from './src/lib/code-blocks'
 export default defineConfig({
   integrations: [
     starlight({
-      title: 'mobx/motion',
+      // 站名來自網站設定（也是瀏覽器分頁標題的後綴）
+      title: siteConfig.name,
       // 單一語系。zh-Hant-TW 對不到 Starlight 內建的 zh-TW 翻譯，
       // 介面字串由 src/content/i18n/zh-Hant-TW.json 提供。
       locales: { root: { label: '繁體中文', lang: 'zh-Hant-TW' } },
