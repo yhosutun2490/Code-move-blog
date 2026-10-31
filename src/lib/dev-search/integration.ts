@@ -57,10 +57,11 @@ function serveDevIndex(logger: AstroIntegrationLogger): Plugin {
     name: 'dev-search:serve-index',
     apply: 'serve',
     configureServer(server) {
-      // 抓頁面用的網址：取自第一個 /pagefind/ 請求的 Host（dev server 的實際 port）
-      let origin = ''
       const cache = createIndexCache(async () => {
         const started = performance.now()
+        // 從 dev server 自己的網址抓頁面（實際 port 在 server 啟動後才知道）
+        const origin = server.resolvedUrls?.local[0]
+        if (!origin) throw new Error('dev 搜尋：找不到 dev server 的網址')
         const pages = await crawlPages(origin)
         const built = await buildPagefindIndex(pages)
         logger.info(`dev 搜尋索引：${pages.length} 頁，${Math.round(performance.now() - started)}ms`)
@@ -68,6 +69,7 @@ function serveDevIndex(logger: AstroIntegrationLogger): Plugin {
       })
 
       const contentDir = join(server.config.root, 'src', 'content') + sep
+      // 檔案事件比 Astro 內容層重新同步早一點：這瞬間的 /pagefind/ 請求可能存到舊內容，直到下次編輯（可接受）
       server.watcher.on('all', (_event, file) => {
         if (file.startsWith(contentDir)) cache.invalidate()
       })
@@ -81,7 +83,6 @@ function serveDevIndex(logger: AstroIntegrationLogger): Plugin {
       server.middlewares.use(async (req, res, next) => {
         const path = req.url?.split('?')[0] ?? ''
         if (!path.startsWith('/pagefind/')) return next()
-        origin = `http://${req.headers.host}`
         try {
           const body = (await cache.get()).get(path)
           if (!body) {
@@ -91,7 +92,7 @@ function serveDevIndex(logger: AstroIntegrationLogger): Plugin {
           }
           res.setHeader('Content-Type', contentTypeOf(path))
           res.setHeader('Cache-Control', 'no-store')
-          res.end(Buffer.from(body))
+          res.end(body)
         } catch (error) {
           logger.error(`dev 搜尋索引建立失敗：${error instanceof Error ? error.message : String(error)}`)
           res.statusCode = 500
