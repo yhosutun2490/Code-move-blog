@@ -40,7 +40,8 @@ export function createIndexCache(build: () => Promise<BuiltIndex>): IndexCache {
     invalidate() {
       const old = current
       current = undefined
-      void release(old)
+      // 舊索引釋放失敗不影響下一份，dev 用不必處理
+      void release(old)?.catch(() => {})
     },
     async close() {
       const old = current
