@@ -27,7 +27,8 @@ export async function buildPagefindIndex(pages: CrawledPage[]): Promise<BuiltInd
       },
     }
   } catch (error) {
-    await index.deleteIndex()
+    // 釋放失敗不蓋掉原本的錯誤
+    await index.deleteIndex().catch(() => {})
     throw error
   }
 }
