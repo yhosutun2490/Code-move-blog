@@ -1,8 +1,9 @@
 ---
 // 標題區：文章頁是「第 N 篇 / 共 M 篇」+ 標題 + 導言（frontmatter description）；
-// 首頁（StarlightPage，entry.id 是 ''）是系列封面：「自我學習系列」+ 標題 + 導言。
+// 首頁（StarlightPage，entry.id 是 ''）是網站封面：網站設定的 eyebrow + 標題 + 導言。
 import Default from '@astrojs/starlight/components/PageTitle.astro'
 import { isSeriesPost, publishedSeriesPosts } from '../../lib/series'
+import { siteConfig } from '../../lib/site-config'
 
 const { entry } = Astro.locals.starlightRoute
 const isPost = isSeriesPost(entry.id)
@@ -11,6 +12,6 @@ const total = isPost ? (await publishedSeriesPosts()).length : 0
 ---
 
 {isPost && <p class="eyebrow">MobX 拆解 · 第 {entry.data.order} 篇 / 共 {total} 篇</p>}
-{isHome && <p class="eyebrow">自我學習系列</p>}
+{isHome && <p class="eyebrow">{siteConfig.cover.eyebrow}</p>}
 <Default />
 {(isPost || isHome) && <p class="lede">{entry.data.description}</p>}
