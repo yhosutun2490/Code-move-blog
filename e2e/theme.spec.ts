@@ -15,8 +15,11 @@ test('切換主題會改變頁面配色，換頁後仍保留', async ({ page }) 
   await expect.poll(() => background(page)).not.toBe(dark)
   const light = await background(page)
 
-  // 從首頁的篇章列表點進文章
-  await page.getByRole('main').getByRole('link', { name: POST_TITLE }).click()
+  // 從首頁的「最新一篇」點進文章（POST 是唯一的已發布篇章，也就是最新一篇）
+  await page
+    .getByRole('region', { name: '最新一篇' })
+    .getByRole('link', { name: new RegExp(`${POST_TITLE}.*開始閱讀`) })
+    .click()
   await expect(page).toHaveURL(POST)
   await expect(picker(page)).toHaveValue('light')
   expect(await background(page)).toBe(light)
