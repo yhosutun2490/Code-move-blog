@@ -32,6 +32,13 @@
   display: flex;
 }
 
+/* ---------- 側欄 ---------- */
+/* 淺色時目前篇章用淡底 + 重點色文字（Starlight 預設是實心重點色塊，在淺色底上太重） */
+:root[data-theme='light'] .sidebar-content a[aria-current='page'] {
+  background-color: var(--accent-soft);
+  color: var(--accent-text);
+}
+
 /* ---------- 首頁：封面的標題、導言由 PageTitle 畫，這裡是依主題分區的篇章列表 ---------- */
 /* 主題分區之間留白；分區標題（h2）沿用內文標題樣式 */
 .topic + .topic {
