@@ -169,82 +169,166 @@
 }
 
 /* ---------- magic move stepper ---------- */
+/*
+ * 寬：左邊直的步驟軌道（目前步驟底下展開說明），右邊程式碼，按鈕在軌道下方。
+ * 窄（stepper 所在欄寬不到 36rem；桌面文章欄約 39rem，見 .stepper-host 的 container query）：軌道橫排成一列編號，
+ * 說明在程式碼上方，按鈕在程式碼下方。說明在兩處各有一份，依寬度只顯示其中一份。
+ */
+.stepper-host {
+  container-type: inline-size;
+}
+
 .stepper {
   margin: 2rem 0;
-  border: 1px solid var(--rule);
-  border-radius: 14px;
-  overflow: hidden;
-  background: var(--paper-2);
+  display: grid;
+  grid-template-columns: 12rem minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'rail code'
+    'nav  code';
+  gap: 0.75rem 1.25rem;
+  align-items: start;
 }
 
 .stepper:focus-visible {
-  outline-offset: 0;
+  outline-offset: 4px;
 }
 
-.stepper-tabs {
-  display: flex;
+.stepper button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* 步驟軌道 */
+.stepper-rail {
+  grid-area: rail;
+  position: relative;
   list-style: none;
   margin: 0;
-  padding: 0.5rem;
-  gap: 0.25rem;
-  flex-wrap: wrap;
+  padding: 0;
 }
 
-.stepper-tabs li {
-  flex: 0 0 auto;
+/* 軌道線：直排時從第一個編號連到最後一個 */
+.stepper-rail::before {
+  content: '';
+  position: absolute;
+  left: calc(0.725rem - 1px);
+  top: 0.9rem;
+  bottom: 0.9rem;
+  width: 2px;
+  background: var(--rule);
 }
 
-/* 窄螢幕：非目前步驟只留數字，避免分頁列擠成好幾行 */
-@media (max-width: 40rem) {
-  .stepper-tabs button:not([aria-current='step']) .stepper-label {
-    display: none;
-  }
+.stepper-rail > li {
+  padding-bottom: 0.5rem;
 }
 
-.stepper-tabs button {
+.stepper-rail button {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.75rem;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.2rem 0;
   border: 0;
-  border-radius: 8px;
-  background: transparent;
+  background: none;
   color: var(--ink-soft);
-  font-size: 0.85rem;
-  cursor: pointer;
-  white-space: nowrap;
+  text-align: left;
+  font-size: 0.9rem;
 }
 
-.stepper-tabs button:hover {
+.stepper-rail button:hover {
   color: var(--ink);
-}
-
-.stepper-tabs button[aria-current='step'] {
-  background: var(--paper);
-  color: var(--ink);
-  box-shadow: 0 1px 0 var(--rule);
 }
 
 .stepper-num {
+  flex: none;
+  position: relative;
+  z-index: 1; /* 蓋住軌道線與進度線 */
   display: inline-grid;
   place-items: center;
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 1.45rem;
+  height: 1.45rem;
   border-radius: 50%;
+  border: 2px solid var(--rule);
+  background: var(--paper);
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  background: var(--rule);
-  color: var(--ink);
 }
 
-.stepper-tabs button[aria-current='step'] .stepper-num {
+.stepper-rail [data-state='done'] .stepper-num {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.stepper-rail [data-state='current'] .stepper-num {
+  border-color: var(--accent);
   background: var(--accent);
   color: #fff;
 }
 
+.stepper-rail [data-state='current'] .stepper-label {
+  color: var(--ink-strong);
+  font-weight: 700;
+}
+
+/* 說明 */
+.stepper-note {
+  margin: 0;
+  line-height: 1.75;
+}
+
+.stepper-note-rail {
+  margin: 0.35rem 0 0.5rem 2.05rem;
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+
+.stepper-note-top {
+  grid-area: note;
+  display: none;
+  font-size: 0.95rem;
+}
+
+.stepper-note-top strong {
+  display: block;
+  margin: 0.15rem 0;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--ink-strong);
+}
+
+.stepper-count {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+/* 「+N 行」：這一步新增 / 改過幾行 */
+.stepper-badge {
+  display: inline-block;
+  margin-right: 0.4rem;
+  padding: 0 0.4rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--get) 18%, transparent);
+  color: var(--get);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+/* 程式碼：外框、圓角、字體也是一般程式碼區塊（Expressive Code）的基準，見 src/lib/code-blocks.ts */
 .stepper-code {
-  background: var(--code-bg);
+  --code-pad-y: 1.25rem;
+  --code-line: calc(0.84rem * 1.65); /* 一行的高度 = 字級 × 行高，變更行標示靠它對齊 */
+  grid-area: code;
+  position: relative;
   min-height: 12rem;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--code-bg);
 }
 
 .stepper-code .shiki-magic-move-container {
@@ -252,34 +336,46 @@
   font-size: 0.84rem;
   line-height: 1.65;
   margin: 0;
-  padding: 1.25rem 1.4rem;
+  padding: var(--code-pad-y) 1.4rem;
   overflow-x: auto;
 }
 
-.stepper-footer {
-  padding: 1rem 1.25rem 1.1rem;
-  display: grid;
-  gap: 0.9rem;
+/* 變更行標示：疊在程式碼上，等 magic move 動畫（650ms）跑完再淡入 */
+.stepper-marks > span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--code-pad-y) + var(--line) * var(--code-line));
+  height: var(--code-line);
+  border-left: 3px solid var(--code-added);
+  background: color-mix(in srgb, var(--code-added) 14%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  animation: stepper-mark-in 0.3s ease-out 0.6s forwards;
 }
 
-.stepper-note {
-  margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.75;
+.stepper-marks > span::before {
+  content: '+';
+  position: absolute;
+  left: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: var(--code-line);
+  color: var(--code-added);
 }
 
-.stepper-note strong {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  margin-bottom: 0.15rem;
+@keyframes stepper-mark-in {
+  to {
+    opacity: 1;
+  }
 }
 
+/* 上一步 / 下一步 */
 .stepper-nav {
+  grid-area: nav;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 .stepper-nav button,
@@ -293,6 +389,11 @@
   cursor: pointer;
 }
 
+.stepper-nav button {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+}
+
 .stepper-nav button:hover:not(:disabled),
 .demo-actions button:hover {
   border-color: var(--accent);
@@ -304,10 +405,70 @@
   cursor: default;
 }
 
-.stepper-count {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: var(--ink-soft);
+/* 窄：橫排軌道，說明移到程式碼上方，按鈕在程式碼下方 */
+@container (max-width: 36rem) {
+  .stepper {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas: 'rail' 'note' 'code' 'nav';
+  }
+
+  .stepper-rail {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .stepper-rail::before,
+  .stepper-rail::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0.95rem;
+    height: 2px;
+    transform: translateY(-50%);
+  }
+
+  .stepper-rail::before {
+    right: 0.95rem;
+    bottom: auto;
+    width: auto;
+  }
+
+  /* 進度線：從第一個編號畫到目前步驟（--progress 由元件設定） */
+  .stepper-rail::after {
+    width: calc((100% - 1.9rem) * var(--progress, 0));
+    background: var(--accent);
+    transition: width 0.3s ease;
+  }
+
+  .stepper-rail > li {
+    padding: 0;
+  }
+
+  .stepper-rail button {
+    width: auto;
+    padding: 0;
+  }
+
+  .stepper-num {
+    width: 1.9rem;
+    height: 1.9rem;
+    font-size: 0.8rem;
+  }
+
+  /* 標題放不下：目前步驟的標題寫在下方說明裡 */
+  .stepper-label,
+  .stepper-note-rail {
+    display: none;
+  }
+
+  .stepper-note-top {
+    display: block;
+  }
+
+  .stepper-nav {
+    justify-content: space-between;
+  }
 }
 
 /* ---------- demos ---------- */
