@@ -1,0 +1,164 @@
+---
+// PROTOTYPE — D：頭條 + 索引。保留網站封面（PageTitle 畫的 eyebrow / 標題 / 導言），下方由「最新一篇」當主視覺，
+// 主要動作是「開始讀這篇」；系列進度用一排編號點表示，其他主題收成下方的精簡索引。
+import type { ProtoGroup } from './data'
+
+const { groups } = Astro.props as { groups: ProtoGroup[] }
+// 頭條固定用真實資料：第一個主題最後一篇已發布文章（目前沒有日期欄位，用 order 最大當「最新」）
+const lead = groups[0]
+const leadPost = lead.posts.filter((p) => !p.fake).at(-1)!
+---
+
+<div class="not-content">
+  <a class="hero" href={leadPost.href}>
+    <span class="kicker">最新 · {lead.name} 第 {Number(leadPost.num)} 篇</span>
+    <span class="hero-title">{leadPost.title}</span>
+    <span class="hero-desc">{leadPost.description}</span>
+    <span class="hero-cta">開始閱讀 →</span>
+  </a>
+
+  <ol class="dots" aria-label={`${lead.name} 系列`}>
+    {
+      lead.posts.map((p) => (
+        <li data-fake={p.fake || undefined}>
+          <a href={p.href} title={p.title} aria-current={p === leadPost ? 'true' : undefined}>
+            {p.num}
+          </a>
+        </li>
+      ))
+    }
+  </ol>
+
+  <h2 class="index-head">所有主題</h2>
+  <ul class="index">
+    {
+      groups.map((g) => (
+        <li data-fake={g.fake || undefined}>
+          <a href={g.posts[0].href}>
+            <span class="index-name">{g.name}</span>
+            <span class="index-desc">{g.description}</span>
+            <span class="index-count">→</span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<style>
+  .hero {
+    display: grid;
+    gap: 0.9rem;
+    padding: 2rem 1.75rem;
+    border-radius: 18px;
+    background:
+      radial-gradient(circle at 100% 0%, var(--accent-soft), transparent 60%),
+      var(--paper-2);
+    border: 1px solid var(--rule);
+    color: inherit;
+    text-decoration: none;
+  }
+  .kicker {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    color: var(--accent-text);
+  }
+  .hero-title {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(1.8rem, 5vw, 2.6rem);
+    line-height: 1.25;
+    color: var(--ink-strong);
+  }
+  .hero-desc {
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+    line-height: 1.8;
+  }
+  .hero-cta {
+    justify-self: start;
+    margin-top: 0.5rem;
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 500;
+  }
+  .hero:hover .hero-cta {
+    filter: brightness(1.1);
+  }
+  .dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+  }
+  .dots a {
+    display: inline-grid;
+    place-items: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 50%;
+    border: 1px solid var(--rule);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+  .dots a:hover {
+    border-color: var(--accent);
+    color: var(--accent-text);
+  }
+  .dots a[aria-current] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .index-head {
+    margin: 3rem 0 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+  }
+  .index {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .index a {
+    display: grid;
+    grid-template-columns: 10rem 1fr auto;
+    gap: 1rem;
+    align-items: baseline;
+    padding: 0.9rem 0;
+    border-top: 1px solid var(--rule);
+    color: inherit;
+    text-decoration: none;
+  }
+  .index-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--ink-strong);
+  }
+  .index-desc {
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+  .index a:hover :is(.index-name, .index-count) {
+    color: var(--accent-text);
+  }
+  @media (max-width: 40rem) {
+    .index a {
+      grid-template-columns: 1fr auto;
+    }
+    .index-desc {
+      display: none;
+    }
+  }
+</style>

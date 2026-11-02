@@ -1,0 +1,125 @@
+---
+// PROTOTYPE — B：主題卡片牆。主要動作是「挑一個主題、從第 1 篇開始」，篇章只露前三篇的標題。
+import type { ProtoGroup } from './data'
+
+const { groups } = Astro.props as { groups: ProtoGroup[] }
+---
+
+<div class="cards not-content">
+  {
+    groups.map((g) => {
+      const realCount = g.posts.filter((p) => !p.fake).length
+      return (
+        <article class="card" data-fake={g.fake || undefined}>
+          <header>
+            <h2>{g.name}</h2>
+            <span class="count">
+              {/* 模擬資料開關會影響篇數：兩個數字都畫，交給 [data-fake] 顯示其一 */}
+              {realCount !== g.posts.length && <span data-fake>{g.posts.length} 篇</span>}
+              {realCount !== g.posts.length && <span data-real-only>{realCount} 篇</span>}
+              {realCount === g.posts.length && <span>{realCount} 篇</span>}
+            </span>
+          </header>
+          <p class="desc">{g.description}</p>
+          <ol>
+            {g.posts.slice(0, 3).map((p) => (
+              <li data-fake={p.fake || undefined}>
+                <a href={p.href}>
+                  <span class="num">{p.num}</span>
+                  {p.title}
+                </a>
+              </li>
+            ))}
+          </ol>
+          <a class="cta" href={g.posts[0].href}>
+            從第 1 篇開始 →
+          </a>
+        </article>
+      )
+    })
+  }
+</div>
+
+<style>
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: 1rem;
+  }
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.25rem 1.25rem 1.1rem;
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    background: var(--paper-2);
+    transition: border-color 0.15s;
+  }
+  .card:hover {
+    border-color: var(--accent);
+  }
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--ink-strong);
+  }
+  .count {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent-text);
+  }
+  .desc {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+  ol {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem 0 0;
+    border-top: 1px dashed var(--rule);
+    display: grid;
+    gap: 0.35rem;
+    flex: 1;
+    align-content: start;
+  }
+  ol a {
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 0.92rem;
+  }
+  ol a:hover {
+    color: var(--accent-text);
+  }
+  .num {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-faint);
+    margin-right: 0.5rem;
+  }
+  .cta {
+    align-self: flex-start;
+    margin-top: 0.25rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 500;
+  }
+</style>

@@ -1,0 +1,30 @@
+---
+// PROTOTYPE — A：現況（主題分區 + 編號篇章列表），當作對照組。樣式沿用 global.css 的 .topic / .series。
+import type { ProtoGroup } from './data'
+
+const { groups } = Astro.props as { groups: ProtoGroup[] }
+---
+
+<div>
+  {
+    groups.map((g) => (
+      <section class="topic" data-fake={g.fake || undefined}>
+        <h2>{g.name}</h2>
+        <p class="topic-desc">{g.description}</p>
+        <ol class="series not-content">
+          {g.posts.map((post) => (
+            <li data-fake={post.fake || undefined}>
+              <a href={post.href}>
+                <span class="series-num">{post.num}</span>
+                <span class="series-body">
+                  <span class="series-title">{post.title}</span>
+                  <span class="series-desc">{post.description}</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))
+  }
+</div>

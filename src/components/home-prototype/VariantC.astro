@@ -1,0 +1,129 @@
+---
+// PROTOTYPE — C：書本目錄。緊湊、可掃描：主題名在左欄（捲動時黏住），篇章一行一個、虛線引導到頁碼式編號，
+// 導言不直接顯示（滑過 / 聚焦才出現），整頁一眼看完所有篇章。
+import type { ProtoGroup } from './data'
+
+const { groups } = Astro.props as { groups: ProtoGroup[] }
+---
+
+<div class="toc not-content">
+  <p class="toc-head">目錄</p>
+  {
+    groups.map((g, gi) => (
+      <section data-fake={g.fake || undefined}>
+        <div class="part">
+          <span class="part-num">Part {String(gi + 1).padStart(2, '0')}</span>
+          <h2>{g.name}</h2>
+        </div>
+        <ol>
+          {g.posts.map((p) => (
+            <li data-fake={p.fake || undefined}>
+              <a href={p.href}>
+                <span class="row">
+                  <span class="title">{p.title}</span>
+                  <span class="leader" aria-hidden="true" />
+                  <span class="num">{p.num}</span>
+                </span>
+                <span class="desc">{p.description}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))
+  }
+</div>
+
+<style>
+  .toc-head {
+    margin: 0 0 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.3em;
+    color: var(--ink-faint);
+    text-align: center;
+  }
+  section {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: 1.5rem;
+    padding: 1.25rem 0;
+    border-top: 2px solid var(--ink-strong);
+  }
+  .part {
+    position: sticky;
+    top: calc(var(--sl-nav-height, 3.5rem) + 1rem);
+    align-self: start;
+  }
+  .part-num {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--accent-text);
+    letter-spacing: 0.08em;
+  }
+  h2 {
+    margin: 0.25rem 0 0;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--ink-strong);
+  }
+  ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  a {
+    display: block;
+    padding: 0.45rem 0;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .title {
+    font-family: var(--font-display);
+    font-weight: 600;
+  }
+  .leader {
+    flex: 1;
+    min-width: 1.5rem;
+    border-bottom: 1px dotted var(--ink-faint);
+    transform: translateY(-0.3em);
+  }
+  .num {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+  .desc {
+    display: block;
+    max-height: 0;
+    overflow: hidden;
+    color: var(--ink-soft);
+    font-size: 0.88rem;
+    line-height: 1.7;
+    transition: max-height 0.2s ease;
+  }
+  a:is(:hover, :focus-visible) .desc {
+    max-height: 6rem;
+    padding-top: 0.25rem;
+  }
+  a:is(:hover, :focus-visible) .title,
+  a:is(:hover, :focus-visible) .num {
+    color: var(--accent-text);
+  }
+  @media (max-width: 40rem) {
+    section {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+    .part {
+      position: static;
+    }
+  }
+</style>

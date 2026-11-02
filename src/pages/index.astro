@@ -3,11 +3,29 @@
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro'
 import { publishedTopics } from '../lib/series'
 import { siteConfig } from '../lib/site-config'
+// PROTOTYPE — 首頁版面原型（branch prototype/home-layout）：
+// 「首頁的五種版面（A 現況 / B 主題卡片牆 / C 書本目錄 / D 頭條 + 索引 / E 頭條 + 索引低調版），在既有的 / 路由上用 ?variant= 切換，
+//  ?fake=1 墊模擬資料看密度」。只在 astro dev 出現；production 照舊畫原本的列表。選定後整批丟掉。
+import PrototypeSwitcher from '../components/PrototypeSwitcher.astro'
+import VariantA from '../components/home-prototype/VariantA.astro'
+import VariantB from '../components/home-prototype/VariantB.astro'
+import VariantC from '../components/home-prototype/VariantC.astro'
+import VariantD from '../components/home-prototype/VariantD.astro'
+import VariantE from '../components/home-prototype/VariantE.astro'
+import { protoGroups } from '../components/home-prototype/data'
 
 // 網站封面：eyebrow、標題與導言由 PageTitle 依 frontmatter 畫（和文章頁的標題區同一套），
 // 這裡只負責依主題分區的篇章列表。
 // 和側欄同一個來源：只列有已發布文章的主題，依主題 order；組內依篇章 order，不含草稿。
 const groups = await publishedTopics()
+const proto = import.meta.env.DEV ? protoGroups(groups) : []
+const protoVariants = [
+  { key: 'A', label: '現況：主題分區 + 編號列表' },
+  { key: 'B', label: '主題卡片牆' },
+  { key: 'C', label: '書本目錄' },
+  { key: 'D', label: '頭條 + 索引' },
+  { key: 'E', label: '頭條 + 索引（低調版 + 圓點）' },
+]
 
 // StarlightPage 會用 docs 集合的 schema 驗證 frontmatter，所以 description、order 都要給。
 // 封面標題與導言來自網站設定；description 就是封面導言，也是 <meta name="description">。
@@ -22,7 +40,19 @@ const frontmatter = {
 
 <StarlightPage frontmatter={frontmatter}>
   {
-    groups.map(({ topic, posts }) => (
+    import.meta.env.DEV && (
+      <>
+        <div data-proto-panel="A"><VariantA groups={proto} /></div>
+        <div data-proto-panel="B" hidden><VariantB groups={proto} /></div>
+        <div data-proto-panel="C" hidden><VariantC groups={proto} /></div>
+        <div data-proto-panel="D" hidden><VariantD groups={proto} /></div>
+        <div data-proto-panel="E" hidden><VariantE groups={proto} /></div>
+        <PrototypeSwitcher variants={protoVariants} />
+      </>
+    )
+  }
+  {
+    !import.meta.env.DEV && groups.map(({ topic, posts }) => (
       <section class="topic" aria-labelledby={`topic-${topic.slug}`}>
         <h2 id={`topic-${topic.slug}`}>{topic.name}</h2>
         <p class="topic-desc">{topic.description}</p>
