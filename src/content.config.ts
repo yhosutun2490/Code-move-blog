@@ -13,6 +13,9 @@ const docs = defineCollection({
       extend: z.object({
         description: z.string(), // Starlight 預設選填，這裡改成必填
         order: z.number(),
+        // 發佈日期（YYYY-MM-DD），決定首頁的「最新一篇」。已發布篇章必填（由 series.ts 檢查），
+        // 這裡設成選填，是因為草稿和首頁（StarlightPage）的 frontmatter 也走這份 schema
+        date: z.coerce.date().optional(),
       }),
     })(ctx)
       // order 是主題內的順序，同時決定側欄與上下篇順序，作者不用另外寫 sidebar.order。

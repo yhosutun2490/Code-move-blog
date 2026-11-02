@@ -11,7 +11,7 @@ npm install
 npm run dev        # http://localhost:4321（搜尋也能用，含草稿；見下方說明）
 npm run build      # 靜態輸出到 dist/
 npm run preview    # 預覽 build 結果
-npm test           # build 後檢查 dist/ 的頁面（網址、首頁封面與列表、側欄、目錄、搜尋、上下篇、草稿、繁中介面、字體、island、無 Shiki、程式碼區塊）
+npm test           # build 後檢查 dist/ 的頁面（網址、首頁封面與最新一篇 / 主題索引、發佈日期、側欄、目錄、搜尋、上下篇、草稿、繁中介面、字體、island、無 Shiki、程式碼區塊）
 npm run test:e2e   # build 後用 Playwright 在瀏覽器操作 preview：程式碼動畫、兩個 demo、主題切換、首頁版型、手機版面與選單；另外起 astro dev 測 dev 搜尋
 ```
 
@@ -63,13 +63,13 @@ src/
 │   ├── site-config.ts         # 網站設定：站名、頁首字標、首頁封面、頁尾打造說明（純資料，Astro 設定、元件、測試共用）
 │   ├── topics.ts              # 主題設定：每個主題的 slug、名稱、簡介、排序（純資料，Astro 設定、元件、測試共用）
 │   ├── content-layout.ts      # 內容目錄檢查（載入 Astro 設定時執行）：資料夾都要登記成主題、篇章都要在子資料夾裡
-│   ├── series.ts              # 以主題為單位的篇章查詢（不含草稿、依 order 排序）
+│   ├── series.ts              # 以主題為單位的篇章查詢（不含草稿、依 order 排序）、最新一篇（依發佈日期）
 │   ├── dev-search/            # astro dev 時的搜尋：解除 Starlight 的 dev 限制、抓頁面建記憶體索引、內容變動時重建
 │   └── pagination.ts          # 上一篇 / 下一篇：只在目前主題的側欄群組內串連（routeData.ts 用）
-├── pages/index.astro          # 首頁：側欄 + 網站封面 + 依主題分區的篇章列表（列表由 series.ts 的 publishedTopics 產生）
+├── pages/index.astro          # 首頁：側欄 + 網站封面 +「最新一篇」（series.ts 的 latestPost）+「所有主題」索引（publishedTopics）
 └── styles/
     ├── theme.css              # 字體、顏色 token、版心寬度的唯一來源，含 Starlight --sl-* 對應
-    └── global.css             # 網站自己的元件樣式（eyebrow / lede、首頁列表、stepper、demo），只用 theme.css 的 token
+    └── global.css             # 網站自己的元件樣式（eyebrow / lede、首頁的最新一篇與主題索引、stepper、demo），只用 theme.css 的 token
 tests/                         # npm test：檢查 build 出來的 dist/
 ├── site.test.ts               # 網址、封面、側欄、目錄、搜尋、草稿、繁中介面、主題、字體
 ├── code-blocks.test.ts        # 一般程式碼區塊和程式碼動畫的外框、字體、配色一致
@@ -93,10 +93,11 @@ e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
 文章放在所屬主題的資料夾裡：`src/content/docs/<主題>/<篇章資料夾>/index.mdx`，網址是 `/<主題>/<篇章資料夾>/`。
 
 篇章**一定要放在自己的子資料夾裡**。直接放在主題資料夾底下的 `.md` / `.mdx`（例如 `src/content/docs/mobx/index.mdx`、`mobx/intro.md`）
-會被 Starlight 當成頁面放進側欄，卻不算篇章（首頁列表、「第 N 篇」都看不到它），所以 `npm run build` 會直接失敗，錯誤訊息會列出這些檔案。
+會被 Starlight 當成頁面放進側欄，卻不算篇章（首頁、「第 N 篇」都看不到它），所以 `npm run build` 會直接失敗，錯誤訊息會列出這些檔案。
 
 1. 複製一篇現有文章（例如 `src/content/docs/mobx/01-getter-setter/`）到同主題底下的新資料夾，例如 `src/content/docs/mobx/02-proxy/`
-2. 改 `index.mdx` 的 frontmatter（`title`、`description`、`order` 都必填，少了 build 會失敗）。`order` 是**主題內**的順序，同時決定首頁、側欄和上下篇的順序；不同主題可以各自從 1 開始。
+2. 改 `index.mdx` 的 frontmatter（`title`、`description`、`order`、`date` 都必填，少了 build 會失敗）。`order` 是**主題內**的順序，同時決定首頁、側欄和上下篇的順序；不同主題可以各自從 1 開始。
+   `date` 是發佈日期（`YYYY-MM-DD`），首頁的「最新一篇」是日期最晚的那篇（同一天時取主題、篇章順序較後的）。草稿可以先不寫，改成發布時再補上。
    Starlight 的 frontmatter `prev` / `next` **不會生效**：上一篇 / 下一篇一律依同主題內的 `order` 串連（由 `src/routeData.ts` 覆寫），要調整請改 `order`
 3. 在 `demos/steps/` 放每一步的程式碼，`steps.ts` 寫標題和說明
 4. 文章裡用 `<MagicSteps steps={steps} />` 放動畫，互動 demo 用 `client:visible` 載入，外面包 `<div class="not-content">`，避免套到文章排版樣式
@@ -115,7 +116,7 @@ e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
 
 ### 草稿
 
-草稿可以在 frontmatter 加 `draft: true`。`npm run build` 出來的網站裡，草稿沒有頁面，也不會出現在首頁列表、側欄、上下篇和搜尋裡。
+草稿可以在 frontmatter 加 `draft: true`。`npm run build` 出來的網站裡，草稿沒有頁面，也不會出現在首頁、側欄、上下篇和搜尋裡。
 `npm run dev` 時 Starlight 會照樣顯示草稿（頁面上方有草稿提示），方便預覽，這是正常的。
 
 自己用 `getCollection` 查文章時，Starlight 不會幫你濾掉草稿，請用 `src/lib/series.ts` 的 `publishedPostsOf(主題)`（某主題的已發布篇章）或 `publishedTopics()`（有已發布文章的主題，各附篇章）。
