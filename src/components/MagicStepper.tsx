@@ -18,8 +18,9 @@ export default function MagicStepper({ steps, meta }: Props) {
   )
 
   const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'ArrowRight') go(step + 1)
-    if (e.key === 'ArrowLeft') go(step - 1)
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
+    e.preventDefault() // PROTOTYPE：讓原型切換列不搶方向鍵（見 PrototypeSwitcher.astro）
+    go(step + (e.key === 'ArrowRight' ? 1 : -1))
   }
 
   const current = meta[step]

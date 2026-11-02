@@ -1,0 +1,562 @@
+/* PROTOTYPE — 程式碼步驟版型原型（B / C / D）的樣式，丟掉即可。只用 theme.css 的 token。 */
+
+/* 共用：程式碼區（字級、行高和現在的 stepper 一樣，D 的變更標示靠這兩個數字對齊行） */
+.sp-code {
+  position: relative;
+  background: var(--code-bg);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.sp-code .shiki-magic-move-container {
+  font-family: var(--font-mono);
+  font-size: 0.84rem;
+  line-height: 1.65;
+  margin: 0;
+  padding: 1.25rem 1.4rem;
+  overflow-x: auto;
+}
+
+.sp-b button,
+.sp-d button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ---------- B：步驟軌道 ---------- */
+.sp-b {
+  margin: 2rem 0;
+  display: grid;
+  grid-template-columns: 12rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.sp-b:focus-visible {
+  outline-offset: 4px;
+}
+
+.sp-b-rail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+/* 軌道直線 */
+.sp-b-rail::before {
+  content: '';
+  position: absolute;
+  left: 0.7rem;
+  top: 0.8rem;
+  bottom: 3rem;
+  width: 2px;
+  background: var(--rule);
+}
+
+.sp-b-rail > li {
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.sp-b-rail > li > button {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.2rem 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.sp-b-num {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  background: var(--paper);
+  border: 2px solid var(--rule);
+  position: relative; /* 蓋住軌道直線 */
+}
+
+.sp-b-rail [data-state='done'] .sp-b-num {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.sp-b-rail [data-state='current'] .sp-b-num {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.sp-b-rail [data-state='current'] .sp-b-title {
+  color: var(--ink-strong);
+  font-weight: 700;
+}
+
+.sp-b-note {
+  margin: 0.35rem 0 0.5rem 2.05rem;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.sp-b-nav {
+  display: flex;
+  gap: 0.4rem;
+  padding-top: 0.5rem;
+}
+
+.sp-b-nav button,
+.sp-d-nav button {
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.sp-b-nav button:hover:not(:disabled),
+.sp-d-nav button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.sp-b-nav button:disabled,
+.sp-d-nav button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (max-width: 50rem) {
+  .sp-b {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- C：捲動驅動 ---------- */
+.sp-c {
+  margin: 2rem 0;
+}
+
+.sp-c-sticky {
+  position: sticky;
+  top: calc(var(--sl-nav-height, 3.5rem) + 0.5rem);
+  z-index: 1;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.35);
+}
+
+/* 程式碼最長快 40 行：限制在半個畫面左右，超過的在框內捲動，下面的說明才看得到 */
+.sp-c-sticky .sp-code {
+  border-radius: 0 0 12px 12px;
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+.sp-c-sticky .shiki-magic-move-container {
+  font-size: 0.78rem;
+}
+
+.sp-c-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  border-radius: 12px 12px 0 0;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-bottom: 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
+.sp-c-hint {
+  color: var(--ink-faint);
+}
+
+.sp-c-notes {
+  list-style: none;
+  margin: 0;
+  padding: 1.5rem 0 30vh;
+}
+
+.sp-c-notes li {
+  min-height: 32vh;
+  padding: 1rem 1.25rem;
+  border-left: 3px solid var(--rule);
+  opacity: 0.45;
+  cursor: pointer;
+  transition: opacity 0.2s, border-color 0.2s;
+}
+
+.sp-c-notes li[data-current] {
+  opacity: 1;
+  border-left-color: var(--accent);
+}
+
+.sp-c-num {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent-text);
+}
+
+.sp-c-notes strong {
+  display: block;
+  margin: 0.2rem 0 0.4rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--ink-strong);
+}
+
+.sp-c-notes p {
+  margin: 0;
+  line-height: 1.8;
+}
+
+/* ---------- D：變更聚焦 ---------- */
+.sp-d {
+  margin: 2rem 0;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: var(--paper-2);
+  overflow: hidden;
+}
+
+.sp-d:focus-visible {
+  outline-offset: 0;
+}
+
+.sp-d-head {
+  padding: 0.9rem 1.25rem 1rem;
+}
+
+.sp-d-progress {
+  display: flex;
+  gap: 4px;
+  list-style: none;
+  margin: 0 0 0.9rem;
+  padding: 0;
+}
+
+.sp-d-progress li {
+  flex: 1;
+}
+
+.sp-d-progress button {
+  display: block;
+  width: 100%;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: var(--rule);
+}
+
+.sp-d-progress button[data-done] {
+  background: var(--accent-soft);
+}
+
+.sp-d-progress button[aria-current] {
+  background: var(--accent);
+}
+
+.sp-d-note {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+
+.sp-d-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+.sp-d-badge {
+  padding: 0 0.4rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--get) 25%, transparent);
+  color: var(--get);
+}
+
+.sp-d-note strong {
+  display: block;
+  margin: 0.15rem 0;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--ink-strong);
+}
+
+.sp-d-code {
+  border-radius: 0;
+}
+
+/* 變更行：等 magic move 動畫（650ms）跑完再淡入 */
+.sp-d-marks span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1.386rem; /* 0.84rem × 1.65 = 一行 */
+  background: color-mix(in srgb, var(--get) 14%, transparent);
+  pointer-events: none;
+  border-left: 3px solid var(--get);
+  opacity: 0;
+  animation: sp-mark-in 0.3s ease-out 0.6s forwards;
+}
+
+.sp-d-marks span::before {
+  content: '+';
+  position: absolute;
+  left: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.386rem;
+  color: var(--get);
+}
+
+@keyframes sp-mark-in {
+  to {
+    opacity: 1;
+  }
+}
+
+.sp-d-nav {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+}
+
+/* ---------- E：B 的軌道 + D 的變更標示；窄螢幕軌道改橫排 ---------- */
+.sp-e {
+  margin: 2rem 0;
+  display: grid;
+  grid-template-columns: 12rem minmax(0, 1fr);
+  grid-template-areas: 'rail code';
+  gap: 1rem;
+  align-items: start;
+}
+
+.sp-e:focus-visible {
+  outline-offset: 4px;
+}
+
+.sp-e button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.sp-e-rail {
+  grid-area: rail;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+.sp-e-code {
+  grid-area: code;
+}
+
+.sp-e-narrow {
+  display: none;
+}
+
+/* 軌道直線 */
+.sp-e-rail::before {
+  content: '';
+  position: absolute;
+  left: 0.7rem;
+  top: 0.8rem;
+  bottom: 3rem;
+  width: 2px;
+  background: var(--rule);
+}
+
+.sp-e-rail > li {
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.sp-e-rail > li > button {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.2rem 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.sp-e-num {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  background: var(--paper);
+  border: 2px solid var(--rule);
+  position: relative;
+  z-index: 1; /* 蓋住軌道線與進度線 */
+}
+
+.sp-e-rail [data-state='done'] .sp-e-num {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.sp-e-rail [data-state='current'] .sp-e-num {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.sp-e-rail [data-state='current'] .sp-e-title {
+  color: var(--ink-strong);
+  font-weight: 700;
+}
+
+.sp-e-note.sp-e-wide {
+  margin: 0.35rem 0 0.5rem 2.05rem;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.sp-e-note.sp-e-wide .sp-d-badge {
+  display: inline-block;
+  margin-right: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.sp-e-nav {
+  display: flex;
+  gap: 0.4rem;
+  padding-top: 0.5rem;
+}
+
+.sp-e-nav button {
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.sp-e-nav button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.sp-e-nav button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (max-width: 50rem) {
+  .sp-e {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'rail' 'note' 'code' 'nav';
+    gap: 0.75rem;
+  }
+
+  .sp-e-wide {
+    display: none !important;
+  }
+
+  .sp-e-narrow {
+    display: block;
+  }
+
+  /* 橫排軌道：一排編號，用一條橫線連起來，標題藏起來（目前步驟的標題在下面的說明裡） */
+  .sp-e-rail {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .sp-e-rail::before {
+    left: 0.95rem;
+    right: 0.95rem;
+    top: 50%;
+    bottom: auto;
+    width: auto;
+    height: 2px;
+    transform: translateY(-50%);
+  }
+
+  .sp-e-rail > li {
+    padding: 0;
+  }
+
+  .sp-e-rail > li > button {
+    padding: 0;
+  }
+
+  .sp-e-title {
+    display: none;
+  }
+
+  .sp-e-num {
+    width: 1.9rem;
+    height: 1.9rem;
+    font-size: 0.8rem;
+  }
+
+  /* 進度線：從第一個編號畫到目前步驟（--progress = 目前步驟 / 最後一步），編號蓋在線上面 */
+  .sp-e-rail::after {
+    content: '';
+    position: absolute;
+    left: 0.95rem;
+    top: 50%;
+    width: calc((100% - 1.9rem) * var(--progress, 0));
+    height: 2px;
+    background: var(--accent);
+    transform: translateY(-50%);
+    transition: width 0.3s ease;
+  }
+
+  .sp-e-note.sp-e-narrow {
+    grid-area: note;
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.75;
+  }
+
+  .sp-e-note strong {
+    display: block;
+    margin: 0.15rem 0;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--ink-strong);
+  }
+
+  .sp-e-narrow:has(> .sp-e-nav) {
+    grid-area: nav;
+  }
+
+  .sp-e-nav {
+    justify-content: space-between;
+    padding: 0;
+  }
+}

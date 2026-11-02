@@ -12,6 +12,14 @@ import { codeToKeyedTokens, createMagicMoveMachine } from 'shiki-magic-move/core
 import { CODE_THEME, getHighlighter } from '../lib/highlighter'
 import MagicStepper from './MagicStepper'
 import type { Step } from '../lib/types'
+// PROTOTYPE — 程式碼步驟版型原型（branch prototype/code-stepper）：
+// 「文章裡程式碼步驟的五種版型（A 現況 / B 步驟軌道 / C 捲動驅動 / D 變更聚焦 / E B 軌道 + D 變更標示，手機橫排），在既有文章頁上用 ?variant= 切換」。
+// 只在 astro dev 出現；production 照舊畫 MagicStepper。選定後整批丟掉。
+import PrototypeSwitcher from './PrototypeSwitcher.astro'
+import StepperB from './stepper-prototype/StepperB'
+import StepperC from './stepper-prototype/StepperC'
+import StepperD from './stepper-prototype/StepperD'
+import StepperE from './stepper-prototype/StepperE'
 
 interface Props {
   steps: Step[]
@@ -28,9 +36,40 @@ const machine = createMagicMoveMachine(
 // 每個步驟都和前一步比對，讓相同的 token 共用 key → 動畫時才知道誰該滑去哪
 const compiled = steps.map((step) => machine.commit(step.code.trimEnd()).current)
 const meta = steps.map(({ title, note }) => ({ title, note }))
+const codes = steps.map((step) => step.code.trimEnd())
+const protoVariants = [
+  { key: 'A', label: '現況：分頁 + 程式碼 + 說明' },
+  { key: 'B', label: '步驟軌道（說明在旁邊）' },
+  { key: 'C', label: '捲動驅動（程式碼黏在上方）' },
+  { key: 'D', label: '變更聚焦（標出新增的行）' },
+  { key: 'E', label: 'B 軌道 + D 變更標示（手機橫排）' },
+]
 ---
 
 <!-- not-content：不讓 Starlight 的文章排版樣式套到 stepper 的 ol / p / pre / button -->
-<div class="not-content">
-  <MagicStepper client:visible steps={compiled} meta={meta} />
-</div>
+{
+  import.meta.env.DEV ? (
+    <div class="not-content">
+      <div data-proto-panel="A">
+        <MagicStepper client:visible steps={compiled} meta={meta} />
+      </div>
+      <div data-proto-panel="B" hidden>
+        <StepperB client:visible steps={compiled} meta={meta} codes={codes} />
+      </div>
+      <div data-proto-panel="C" hidden>
+        <StepperC client:visible steps={compiled} meta={meta} codes={codes} />
+      </div>
+      <div data-proto-panel="D" hidden>
+        <StepperD client:visible steps={compiled} meta={meta} codes={codes} />
+      </div>
+      <div data-proto-panel="E" hidden>
+        <StepperE client:visible steps={compiled} meta={meta} codes={codes} />
+      </div>
+      <PrototypeSwitcher variants={protoVariants} />
+    </div>
+  ) : (
+    <div class="not-content">
+      <MagicStepper client:visible steps={compiled} meta={meta} />
+    </div>
+  )
+}
