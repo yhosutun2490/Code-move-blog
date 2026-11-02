@@ -66,11 +66,11 @@ describe('一般程式碼區塊融入紙張風格（和程式碼動畫同一套�
   }
 
   it('圓角相同', () => {
-    expect(ecValue('--ec-brdRad')).toEqual(resolved(ruleValue('.stepper', 'border-radius')))
+    expect(ecValue('--ec-brdRad')).toEqual(resolved(ruleValue('.stepper-code', 'border-radius')))
   })
 
   it('外框顏色相同', () => {
-    const border = ruleValue('.stepper', 'border')
+    const border = ruleValue('.stepper-code', 'border')
     const color = border.match(/var\([^)]*\)|#[0-9a-fA-F]+$/)![0]
     expect(ecValue('--ec-brdCol')).toEqual(resolved(color))
   })

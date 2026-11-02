@@ -13,14 +13,14 @@ export const expressiveCode = {
   // Expressive Code 預設會把對比不足的 token 調亮（例如深色主題裡灰色的 `=`），
   // 程式碼動畫用的是 Shiki 原色，關掉調整兩邊才會一模一樣
   minSyntaxHighlightingColorContrast: 0,
-  // 外框、圓角、字體、背景跟程式碼動畫（global.css 的 .stepper）用同一組 token，融入紙張風格
+  // 外框、圓角、字體、背景跟程式碼動畫（global.css 的 .stepper-code）用同一組 token，融入紙張風格
   styleOverrides: {
     borderRadius: '14px',
     borderColor: 'var(--rule)',
     codeBackground: 'var(--code-bg)',
     codeFontFamily: 'var(--font-mono)',
     frames: {
-      // 紙張風格不用陰影，和 .stepper 一樣只有一條細框
+      // 紙張風格不用陰影，和 .stepper-code 一樣只有一條細框
       frameBoxShadowCssValue: 'none',
     },
   },
