@@ -40,6 +40,8 @@ export interface Post {
   title: string
   description: string
   order: number
+  /** 發佈日期（YYYY-MM-DD）；草稿可以沒有 */
+  date: string | undefined
   draft: boolean
   /** MDX 內文（不含 frontmatter），用來推算頁面上該有哪些互動元件 */
   body: string
@@ -74,6 +76,8 @@ export function allPosts(): Post[] {
         title: data.title,
         description: data.description,
         order: data.order,
+        // yaml 預設把 2026-10-26 讀成字串；保險起見也接受 Date
+        date: data.date instanceof Date ? data.date.toISOString().slice(0, 10) : data.date,
         draft: data.draft ?? false,
         body: match[2],
       })
@@ -87,6 +91,18 @@ export function allPosts(): Post[] {
 /** 讀者看得到的篇章：非草稿，依主題 order、再依篇章 order 排序 */
 export function publishedPosts(): Post[] {
   return allPosts().filter((p) => !p.draft)
+}
+
+/**
+ * 最新一篇：發佈日期最晚的已發布篇章；同一天時取主題 order、篇章 order 較後的那篇。
+ * 沒有已發布篇章時回傳 undefined。
+ */
+export function latestPost(posts: readonly Post[]): Post | undefined {
+  // posts 已依主題 order、篇章 order 排好，所以用 >= 讓同一天的較後者勝出
+  return posts.reduce<Post | undefined>(
+    (latest, p) => (!latest || p.date! >= latest.date! ? p : latest),
+    undefined,
+  )
 }
 
 export interface TopicGroup {

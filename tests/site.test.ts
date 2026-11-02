@@ -10,6 +10,7 @@ import {
   groupByTopic,
   isCrossOrigin,
   islandsOf,
+  latestPost,
   loadPage,
   pageExists,
   postUrl,
@@ -122,11 +123,11 @@ describe('首頁是網站封面', () => {
     expect(tocOf(home)).toBeUndefined()
   })
 
-  it('篇章列表在導言之後', () => {
+  it('最新一篇在導言之後', () => {
     const html = loadPage('/').toString()
-    const firstPost = html.indexOf(`href="${postUrl(posts[0])}"`, html.indexOf(COVER_LEDE))
+    const latest = html.indexOf(`href="${postUrl(latestPost(posts)!)}"`, html.indexOf(COVER_LEDE))
     expect(html.indexOf(COVER_LEDE)).toBeGreaterThan(html.indexOf(COVER_TITLE))
-    expect(firstPost).toBeGreaterThan(-1)
+    expect(latest).toBeGreaterThan(-1)
   })
 
   // 同一個頁首：字標、搜尋、主題切換，連標記都一模一樣。
@@ -151,62 +152,84 @@ describe('首頁是網站封面', () => {
   })
 })
 
-describe('首頁依主題分區的篇章列表', () => {
+describe('發佈日期', () => {
+  it.each(posts.map((p) => [postUrl(p), p] as const))('%s 的 frontmatter 有 YYYY-MM-DD 格式的發佈日期', (_, post) => {
+    expect(post.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+})
+
+describe('首頁：最新一篇與所有主題', () => {
   const home = loadPage('/')
   // 有已發布文章的主題，依主題 order；每個主題的篇章依篇章 order
   const groups = groupByTopic(posts)
+  const latest = latestPost(posts)!
 
-  // 主題分區 = 以標題命名（aria-labelledby）的 <section>，名稱就是那個標題的文字
-  const sections = home.querySelectorAll('main section[aria-labelledby]').map((section) => {
-    const heading = home.getElementById(section.getAttribute('aria-labelledby')!)
-    return { section, heading, name: heading ? textOf(heading) : '' }
-  })
-  const sectionOf = (name: string) => sections.find((s) => s.name === name)
+  // 首頁的區塊 = 以標題命名（aria-labelledby）的 <section>，名稱就是那個標題的文字
+  const sectionNamed = (name: string) =>
+    home.querySelectorAll('main section[aria-labelledby]').find((section) => {
+      const heading = home.getElementById(section.getAttribute('aria-labelledby')!)
+      return heading && /^H[2-6]$/.test(heading.tagName) && textOf(heading) === name
+    })
 
-  // 分區裡「篇章列表」的項目：有序列表裡、連到文章的連結
-  const entriesOf = (section: HTMLElement) =>
-    section
-      .querySelectorAll('ol > li a[href]')
-      .map((a) => ({ href: a.getAttribute('href')!, text: textOf(a) }))
-
-  it('至少有一個主題分區（避免測試空轉）', () => {
-    expect(groups.length).toBeGreaterThan(0)
+  it('至少有一篇已發布文章（避免測試空轉）', () => {
+    expect(latest).toBeDefined()
   })
 
-  it('依主題 order 列出有已發布文章的主題，只含草稿的主題沒有分區', () => {
-    expect(sections.map((s) => s.name)).toEqual(groups.map((g) => g.topic.name))
+  describe('「最新一篇」區塊', () => {
+    const section = sectionNamed('最新一篇')!
+    const lead = section?.querySelector(`a[href="${postUrl(latest)}"]`)
+
+    it('存在，並連到發佈日期最晚的已發布篇章', () => {
+      expect(section, '找不到標題為「最新一篇」的區塊').toBeDefined()
+      expect(lead, `沒有連到 ${postUrl(latest)}`).not.toBeNull()
+    })
+
+    it('寫著主題名稱、第 N 篇、發佈日期、標題與簡介，並有「開始閱讀」', () => {
+      const text = textOf(lead!)
+      expect(text).toContain(topicConfig(latest.topic).name)
+      expect(text).toMatch(new RegExp(`第\\s*${latest.order}\\s*篇`))
+      expect(text).toContain(latest.title)
+      expect(text).toContain(latest.description)
+      expect(text).toContain('開始閱讀')
+      const time = lead!.querySelector('time')
+      expect(time?.getAttribute('datetime')).toBe(latest.date)
+      expect(time && textOf(time)).toBe(latest.date)
+    })
+
+    it('下方的編號列依篇章順序列出同主題所有已發布篇章，兩位數編號，標出最新那篇', () => {
+      const series = groups.find((g) => g.topic.slug === latest.topic)!.posts
+      const items = section.querySelectorAll('ol > li a[href]')
+      expect(items.map((a) => a.getAttribute('href'))).toEqual(series.map(postUrl))
+      expect(items.map((a) => textOf(a))).toEqual(series.map((p) => String(p.order).padStart(2, '0')))
+      // 編號本身看不出是哪篇：用 aria-label 給螢幕閱讀器完整名稱
+      expect(items.map((a) => a.getAttribute('aria-label'))).toEqual(
+        series.map((p) => `第 ${p.order} 篇：${p.title}`),
+      )
+      expect(items.filter((a) => a.hasAttribute('aria-current')).map((a) => a.getAttribute('href'))).toEqual([
+        postUrl(latest),
+      ])
+    })
   })
 
-  it.each(groups.map((g) => [g.topic.name, g] as const))(
-    '「%s」分區的標題層級低於 h1，並寫著主題簡介',
-    (name, { topic }) => {
-      const { section, heading } = sectionOf(name)!
-      expect(heading!.tagName).toMatch(/^H[2-6]$/)
-      expect(section.querySelectorAll('*').includes(heading!), '分區標題不在分區裡').toBe(true)
-      expect(textOf(section)).toContain(topic.description)
-    },
-  )
+  describe('「所有主題」區塊', () => {
+    const section = sectionNamed('所有主題')!
+    const entries = (section?.querySelectorAll('ul > li a[href]') ?? []).map((a) => ({
+      href: a.getAttribute('href')!,
+      text: textOf(a),
+    }))
 
-  it.each(groups.map((g) => [g.topic.name, g] as const))(
-    '「%s」分區依篇章順序列出該主題所有已發布篇章',
-    (name, group) => {
-      const entries = entriesOf(sectionOf(name)!.section)
-      expect(entries.map((e) => e.href)).toEqual(group.posts.map(postUrl))
-    },
-  )
+    it('依主題 order 列出有已發布文章的主題，只含草稿的主題不列出', () => {
+      expect(section, '找不到標題為「所有主題」的區塊').toBeDefined()
+      expect(entries).toHaveLength(groups.length)
+      groups.forEach((g, i) => expect(entries[i].text.startsWith(g.topic.name)).toBe(true))
+    })
 
-  it.each(posts.map((p) => [postUrl(p), p] as const))(
-    '%s 的項目有兩位數編號、標題與簡介',
-    (url, post) => {
-      const entry = entriesOf(sectionOf(topicConfig(post.topic).name)!.section).find(
-        (e) => e.href === url,
-      )!
-      const number = String(post.order).padStart(2, '0')
-      expect(entry.text.startsWith(number)).toBe(true)
-      expect(entry.text).toContain(post.title)
-      expect(entry.text).toContain(post.description)
-    },
-  )
+    it.each(groups.map((g) => [g.topic.name, g] as const))('「%s」寫著主題簡介，連到該主題第一篇已發布篇章', (name, g) => {
+      const entry = entries.find((e) => e.text.startsWith(name))!
+      expect(entry.text).toContain(g.topic.description)
+      expect(entry.href).toBe(postUrl(g.posts[0]))
+    })
+  })
 
   it('不列出草稿', () => {
     for (const draft of allPosts().filter((p) => p.draft)) {
@@ -326,8 +349,9 @@ describe('系列辨識元素', () => {
     },
   )
 
-  it('首頁沒有「第 N 篇」', () => {
-    expect(textOf(loadPage('/'))).not.toMatch(/第\s*\d+\s*篇/)
+  it('首頁封面沒有「第 N 篇」（只有「最新一篇」區塊裡有）', () => {
+    const cover = loadPage('/').querySelector('.content-panel')!
+    expect(textOf(cover)).not.toMatch(/第\s*\d+\s*篇/)
   })
 })
 

@@ -1,5 +1,5 @@
 /*
- * 網站自己的元件樣式（文章標頭的 eyebrow / lede、首頁列表、程式碼動畫、互動 demo）。
+ * 網站自己的元件樣式（文章標頭的 eyebrow / lede、首頁的最新一篇與主題索引、程式碼動畫、互動 demo）。
  * 顏色、字體、版心寬度一律用 theme.css 定義的 token，不在這裡寫死。
  * 一般排版（內文、標題、連結、程式碼框、版面）交給 Starlight。
  */
@@ -39,61 +39,140 @@
   color: var(--accent-text);
 }
 
-/* ---------- 首頁：封面的標題、導言由 PageTitle 畫，這裡是依主題分區的篇章列表 ---------- */
-/* 主題分區之間留白；分區標題（h2）沿用內文標題樣式 */
-.topic + .topic {
-  margin-top: 3rem;
-}
-
-.topic-desc {
+/* ---------- 首頁：封面的標題、導言由 PageTitle 畫，這裡是封面下方的「最新一篇」與「所有主題」 ---------- */
+/* 封面標題是首頁唯一的主角：「最新一篇」刻意不用卡片和大按鈕，標題比封面小，只用左側重點色線標示（深色是橘、淺色是藍綠） */
+.home-head {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
   color: var(--ink-soft);
 }
 
-.series {
-  list-style: none;
-  padding: 0;
-  margin: 0; /* 緊接在主題簡介下方，和簡介的間距由第一項的 padding-top 決定 */
+.home-topics {
+  margin-top: 3rem;
 }
 
-.series li:first-child a {
-  padding-top: 0.5rem;
-}
-
-.series a {
-  display: flex;
-  gap: 1.25rem;
-  padding: 1.5rem 0;
-  border-bottom: 1px solid var(--rule);
+.latest {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.25rem 0 0.25rem 1.25rem;
+  border-left: 3px solid var(--accent);
   color: inherit;
   text-decoration: none;
 }
 
-.series-num {
+.latest-meta {
   font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
   color: var(--accent-text); /* 小字：用對比足夠的橘 */
-  font-size: 0.9rem;
-  padding-top: 0.35rem;
 }
 
-.series-body {
-  display: grid;
-  gap: 0.25rem;
-}
-
-.series-title {
+.latest-title {
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.3rem;
+  font-weight: 700;
+  font-size: 1.45rem;
+  line-height: 1.4;
+  color: var(--ink-strong);
 }
 
-.series a:hover .series-title {
+.latest-desc {
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+  line-height: 1.75;
+}
+
+.latest-cta {
+  font-size: 0.92rem;
+  font-weight: 500;
   color: var(--accent-text);
 }
 
-.series-desc {
+.latest:hover :is(.latest-title, .latest-cta) {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* 同主題的篇章編號列：對齊「最新一篇」的內文左緣 */
+.series-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 1rem 0 0 1.25rem;
+  padding: 0;
+}
+
+.series-dots a {
+  display: inline-grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
   color: var(--ink-soft);
-  font-size: 0.95rem;
-  line-height: 1.7;
+  text-decoration: none;
+}
+
+.series-dots a:hover {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.series-dots a[aria-current] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.topic-index {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.topic-index a {
+  display: grid;
+  grid-template-columns: 10rem 1fr auto;
+  gap: 1rem;
+  align-items: baseline;
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--rule);
+  color: inherit;
+  text-decoration: none;
+}
+
+.topic-index-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink-strong);
+}
+
+.topic-index-desc {
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.topic-index a:hover :is(.topic-index-name, .topic-index-arrow) {
+  color: var(--accent-text);
+}
+
+/* 窄螢幕：主題簡介放到名稱下方，不再分欄 */
+@media (max-width: 40rem) {
+  .topic-index a {
+    grid-template-columns: 1fr auto;
+    gap: 0.25rem 1rem;
+  }
+
+  .topic-index-desc {
+    grid-row: 2;
+  }
 }
 
 /* ---------- magic move stepper ---------- */
