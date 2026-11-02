@@ -2,10 +2,85 @@
 // 包住 Starlight 原本的頁尾（裡面有上一篇 / 下一篇），再補上網站設定的打造說明。
 import Default from '@astrojs/starlight/components/Footer.astro'
 import { siteConfig } from '../../lib/site-config'
+// PROTOTYPE — 淺色主題配色原型（branch prototype/light-palette）：
+// 「淺色主題的四種配色（A 現況米色 / B 白紙暖橘 / C 冷灰藍綠 / D 柔和奶油赭紅），用 ?variant= 切換，只覆寫淺色的 token」。
+// 頁尾在每一頁都有，所以切換列和配色掛在這裡；只在 astro dev 出現。選定後把配色寫回 theme.css，這段整批丟掉。
+import PrototypeSwitcher from '../PrototypeSwitcher.astro'
+
+// 各配色只覆寫淺色的 token（選擇器比 theme.css 的 :root[data-theme='light'] 多一個屬性，所以會蓋過去）
+const paletteCss = `
+      /* B 白紙暖橘：去掉黃色調，頁面接近白紙，面板用暖淺灰分層；保留橘色品牌但只在重點用 */
+      :root[data-theme='light'][data-proto-variant='B'] {
+        --paper: #ffffff;
+        --paper-2: #f6f5f2;
+        --paper-soft: #fafaf8;
+        --ink: #1f1d1a;
+        --ink-strong: #0f0e0c;
+        --ink-dim: #3b3833;
+        --ink-soft: #66615a;
+        --ink-faint: #9a948b;
+        --rule: #e6e2db;
+        --accent: #ea580c;
+        --accent-soft: #fff1e6;
+        --accent-text: #c2410c;
+      }
+
+      /* C 冷灰藍綠：石板灰階、藍綠色重點，整體冷靜偏技術文件 */
+      :root[data-theme='light'][data-proto-variant='C'] {
+        --paper: #f8fafc;
+        --paper-2: #eef2f6;
+        --paper-soft: #f3f6f9;
+        --ink: #1e293b;
+        --ink-strong: #0f172a;
+        --ink-dim: #334155;
+        --ink-soft: #526075;
+        --ink-faint: #8a96a8;
+        --rule: #dae1ea;
+        --accent: #0d9488;
+        --accent-soft: #d5f5f0;
+        --accent-text: #0f766e;
+      }
+
+      /* D 柔和奶油赭紅：保留紙張感但降低黃與飽和度，重點色改成沉穩的赭紅 */
+      :root[data-theme='light'][data-proto-variant='D'] {
+        --paper: #faf8f4;
+        --paper-2: #f2eee7;
+        --paper-soft: #f6f3ee;
+        --ink: #2a2521;
+        --ink-strong: #1a1613;
+        --ink-dim: #433c35;
+        --ink-soft: #6b625a;
+        --ink-faint: #9c938a;
+        --rule: #e4ddd2;
+        --accent: #b5452b;
+        --accent-soft: #f6e4dd;
+        --accent-text: #9c3a22;
+      }
+
+      /* B / C / D：頁首與側欄比內文區淡一階，分出層次 */
+      :root[data-theme='light']:is([data-proto-variant='B'], [data-proto-variant='C'], [data-proto-variant='D']) {
+        --sl-color-bg-nav: var(--paper-soft);
+        --sl-color-bg-sidebar: var(--paper-soft);
+      }
+
+      /* C / D：側欄目前項目從實心色塊改成淡底 + 重點色文字 */
+      :root[data-theme='light']:is([data-proto-variant='C'], [data-proto-variant='D']) .sidebar-content a[aria-current='page'] {
+        background: var(--accent-soft);
+        color: var(--accent-text);
+      }
+`
+
+const paletteVariants = [
+  { key: 'A', label: '現況：米色紙張（只影響淺色）' },
+  { key: 'B', label: '白紙暖橘（只影響淺色）' },
+  { key: 'C', label: '冷灰藍綠（只影響淺色）' },
+  { key: 'D', label: '柔和奶油赭紅（只影響淺色）' },
+]
 ---
 
 <Default><slot /></Default>
 <p class="site-credit">{siteConfig.credit}</p>
+{import.meta.env.DEV && <PrototypeSwitcher variants={paletteVariants} />}
 
 <style>
   .site-credit {
@@ -16,3 +91,5 @@ import { siteConfig } from '../../lib/site-config'
     font-size: var(--sl-text-sm);
   }
 </style>
+
+{import.meta.env.DEV && <style is:inline set:html={paletteCss} />}

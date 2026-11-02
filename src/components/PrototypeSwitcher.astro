@@ -1,0 +1,141 @@
+---
+// PROTOTYPE — 版面原型的浮動切換列（只在 astro dev 出現，呼叫端也要用 import.meta.env.DEV 擋住）。
+// 頁面上每個版面包在 [data-proto-panel="<key>"] 裡；這裡依 ?variant= 只留一個，
+// 有 fakeData 時多一個「模擬資料」開關：?fake=1 時顯示 [data-fake]，否則改顯示 [data-real-only]。
+// ← → 切換版面（輸入框聚焦時不攔截），網址同步更新，可重新整理、可分享。
+interface Props {
+  variants: { key: string; label: string }[]
+  fakeData?: boolean
+}
+const { variants, fakeData = false } = Astro.props
+---
+
+{
+  import.meta.env.DEV && (
+    <div class="proto-bar" role="toolbar" aria-label="版面原型切換（PROTOTYPE）">
+      <button type="button" data-proto-step="-1" aria-label="上一個版面">
+        ‹
+      </button>
+      <span class="proto-label" data-proto-label />
+      <button type="button" data-proto-step="1" aria-label="下一個版面">
+        ›
+      </button>
+      {fakeData && (
+        <label class="proto-fake">
+          <input type="checkbox" data-proto-fake-toggle />
+          模擬資料
+        </label>
+      )}
+    </div>
+  )
+}
+
+{
+  import.meta.env.DEV && (
+    <script is:inline define:vars={{ variants }}>
+      ;(() => {
+        const keys = variants.map((v) => v.key)
+        const html = document.documentElement
+        const label = document.querySelector('[data-proto-label]')
+        const fakeToggle = document.querySelector('[data-proto-fake-toggle]')
+
+        function render() {
+          const params = new URLSearchParams(location.search)
+          const key = keys.includes(params.get('variant')) ? params.get('variant') : keys[0]
+          const fake = params.get('fake') === '1'
+          html.dataset.protoVariant = key
+          html.toggleAttribute('data-proto-fake', fake)
+          document.querySelectorAll('[data-proto-panel]').forEach((el) => {
+            el.hidden = el.dataset.protoPanel !== key
+          })
+          label.textContent = `${key} — ${variants.find((v) => v.key === key).label}`
+          if (fakeToggle) fakeToggle.checked = fake
+        }
+
+        function setParam(name, value) {
+          const url = new URL(location.href)
+          if (value == null) url.searchParams.delete(name)
+          else url.searchParams.set(name, value)
+          history.replaceState(null, '', url)
+          render()
+        }
+
+        function step(delta) {
+          const i = keys.indexOf(html.dataset.protoVariant)
+          setParam('variant', keys[(i + delta + keys.length) % keys.length])
+        }
+
+        document.querySelectorAll('[data-proto-step]').forEach((btn) => {
+          btn.addEventListener('click', () => step(Number(btn.dataset.protoStep)))
+        })
+        fakeToggle?.addEventListener('change', () => setParam('fake', fakeToggle.checked ? '1' : null))
+        document.addEventListener('keydown', (e) => {
+          if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+          if (e.metaKey || e.ctrlKey || e.altKey) return
+          // 頁面上的元件自己用了方向鍵（例如程式碼步驟）時會 preventDefault，這裡就不搶
+          if (e.defaultPrevented) return
+          if (e.target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) return
+          step(e.key === 'ArrowLeft' ? -1 : 1)
+        })
+        render()
+      })()
+    </script>
+  )
+}
+
+<style is:global>
+  html:not([data-proto-fake]) [data-fake],
+  html[data-proto-fake] [data-real-only] {
+    display: none !important;
+  }
+
+  /* 刻意不用網站的 token：一眼就看得出這不是設計的一部分 */
+  .proto-bar {
+    position: fixed;
+    left: 50%;
+    bottom: 4.75rem; /* 讓開 Astro dev toolbar */
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 999px;
+    background: #111;
+    color: #fff;
+    border: 2px solid #ff2d95;
+    box-shadow: 0 8px 30px rgb(0 0 0 / 0.35);
+    font: 500 0.85rem/1 system-ui, sans-serif;
+    white-space: nowrap;
+  }
+  .proto-bar button {
+    width: 2rem;
+    height: 2rem;
+    border: 0;
+    border-radius: 50%;
+    background: #333;
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+  .proto-bar button:hover {
+    background: #ff2d95;
+  }
+  .proto-label {
+    min-width: 14rem;
+    text-align: center;
+  }
+  .proto-fake {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0 0.6rem 0 0.75rem;
+    border-left: 1px solid #444;
+    cursor: pointer;
+  }
+  @media (max-width: 40rem) {
+    .proto-label {
+      min-width: 0;
+    }
+  }
+</style>
