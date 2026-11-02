@@ -37,6 +37,7 @@
   --accent-soft: #3a2414; /* 橘色淡底 */
   --accent-text: #ffb27a; /* 放在底色上當文字（連結）用的橘 */
   --code-bg: #121212; /* = CODE_THEME（src/lib/highlighter.ts）的背景色，兩種模式都一樣；換主題時一起改 */
+  --code-added: #5fc4ad; /* 程式碼動畫的變更行標示：放在 --code-bg 上，所以兩種模式都一樣 */
   --get: #5fc4ad;
   --set: #ff9d57;
   --run: #a59cff;

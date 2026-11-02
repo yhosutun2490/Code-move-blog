@@ -51,8 +51,8 @@ src/
 │   └── draft-topic/           # 只含草稿的測試用主題（見「草稿」），不要刪除
 │       └── draft-fixture/index.mdx
 ├── components/
-│   ├── MagicSteps.astro       # build 時用 Shiki 預編譯 token（client 不載 Shiki）
-│   ├── MagicStepper.tsx       # React island：上一步／下一步 + 動畫
+│   ├── MagicSteps.astro       # build 時用 Shiki 預編譯 token、算出每步的變更行（client 不載 Shiki）
+│   ├── MagicStepper.tsx       # React island：步驟軌道（窄欄改橫排）+ 動畫 + 變更行標示
 │   └── starlight/             # 覆寫 Starlight 元件
 │       ├── PageTitle.astro    # 標題區：eyebrow（文章頁：<主題名稱> · 第 N 篇 / 共 M 篇；首頁：網站設定的封面 eyebrow）+ 標題 + 導言
 │       ├── SiteTitle.astro    # 頁首字標「前段/後段」（字樣來自網站設定 site-config.ts，斜線用強調色）
@@ -134,6 +134,7 @@ e2e/                           # npm run test:e2e：Playwright 瀏覽器測試
 ## 設計備註
 
 - **Magic move 在 build 時預編譯**：`MagicSteps.astro` 在伺服器端跑 Shiki，把每一步轉成 keyed tokens 的 JSON 傳給 island。瀏覽器只載入約 25KB 的動畫元件，不需要 Shiki 和語法檔。
+- **程式碼動畫標出每一步的變更行**：`MagicSteps.astro` 在 build 時用 `src/lib/line-diff.ts` 比對前後兩步（整行比對，忽略縮排），只把行號傳給 island；動畫跑完後那幾行會標成綠底加「+」，說明旁顯示「+N 行」。版型依 stepper 所在欄寬切換（container query）：寬時左邊是直的步驟軌道，窄時軌道橫排、說明移到程式碼上方。
 - **每個 demo 自己建 store**：避免不同篇、不同 demo 互相影響。
 - **改程式碼主題**：程式碼動畫（MagicSteps）和一般程式碼區塊（Starlight 的 Expressive Code）共用 `src/lib/highlighter.ts` 的 `CODE_THEME`。
   Expressive Code 的設定在 `src/lib/code-blocks.ts`（`astro.config.mjs` 和測試都讀這一份）。換主題時，`src/styles/theme.css` 的 `--code-bg` 也要改成新主題的背景色；`npm test` 會檢查兩邊配色是否一致。
