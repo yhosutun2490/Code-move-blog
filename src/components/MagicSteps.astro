@@ -10,6 +10,7 @@
  */
 import { codeToKeyedTokens, createMagicMoveMachine } from 'shiki-magic-move/core'
 import { CODE_THEME, getHighlighter } from '../lib/highlighter'
+import { changedLines } from '../lib/line-diff'
 import MagicStepper from './MagicStepper'
 import type { Step } from '../lib/types'
 
@@ -26,11 +27,15 @@ const machine = createMagicMoveMachine(
 )
 
 // 每個步驟都和前一步比對，讓相同的 token 共用 key → 動畫時才知道誰該滑去哪
-const compiled = steps.map((step) => machine.commit(step.code.trimEnd()).current)
+const codes = steps.map((step) => step.code.trimEnd())
+const compiled = codes.map((code) => machine.commit(code).current)
 const meta = steps.map(({ title, note }) => ({ title, note }))
+// 每一步相對於上一步新增 / 改過的行號：在 build 時算好，island 只拿到行號
+const changed = codes.map((code, i) => changedLines(codes[i - 1], code))
 ---
 
 <!-- not-content：不讓 Starlight 的文章排版樣式套到 stepper 的 ol / p / pre / button -->
-<div class="not-content">
-  <MagicStepper client:visible steps={compiled} meta={meta} />
+<!-- stepper-host：讓 stepper 依自己所在欄的寬度切換直排 / 橫排（container query，見 global.css） -->
+<div class="not-content stepper-host">
+  <MagicStepper client:visible steps={compiled} meta={meta} changed={changed} />
 </div>
